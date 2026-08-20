@@ -13,7 +13,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import UnifiUnasCoordinator
-from .entity_base import UnifiUnasDeviceInfoMixin
+from .entity_base import SnapshotResolvedMixin, UnifiUnasDeviceInfoMixin
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
 from .sensor_descriptions import (
     AGGREGATE_SENSOR_TYPES,
@@ -73,20 +73,23 @@ async def async_setup_entry(
     known_drive_keys: set[str] = set()
 
     def _add_missing_pool_sensors() -> None:
-        """Create pool sensors when pool data becomes available."""
+        """Create pool and pool drive sensors as they become available."""
         new_entities: list[SensorEntity] = []
         for index, pool in enumerate(_pools(coordinator.data)):
             pool_key = _pool_key(pool, index)
-            if pool_key in known_pool_keys:
-                continue
-            known_pool_keys.add(pool_key)
             pool_name = _pool_name(pool, index)
-            new_entities.extend(
-                UnifiUnasPoolSensor(
-                    coordinator, entry, description, pool_key, pool_name
+
+            if pool_key not in known_pool_keys:
+                known_pool_keys.add(pool_key)
+                new_entities.extend(
+                    UnifiUnasPoolSensor(
+                        coordinator, entry, description, pool_key, pool_name
+                    )
+                    for description in POOL_SENSOR_TYPES
                 )
-                for description in POOL_SENSOR_TYPES
-            )
+
+            # Drives are tracked independently so a drive added to an already
+            # known pool (RAID expansion) still gets its entities.
             for drive_index, drive in enumerate(_pool_drives(pool)):
                 drive_key = _drive_key(drive, drive_index)
                 full_drive_key = f"{pool_key}_{drive_key}"
@@ -223,7 +226,7 @@ class UnifiUnasAggregateSensor(UnifiUnasBaseSensor):
         }
 
 
-class UnifiUnasPoolSensor(UnifiUnasBaseSensor):
+class UnifiUnasPoolSensor(SnapshotResolvedMixin, UnifiUnasBaseSensor):
     """Per-pool UNAS storage sensor."""
 
     entity_description: PoolSensorDescription
@@ -274,11 +277,15 @@ class UnifiUnasPoolSensor(UnifiUnasBaseSensor):
 
     def _pool(self) -> dict[str, Any] | None:
         """Return the currently matching pool by key."""
+        return self._resolved()
+
+    def _resolve(self) -> dict[str, Any] | None:
+        """Look the pool up by key, including legacy key formats."""
         pool, _ = _pool_from_key(self.coordinator.data, self._pool_key)
         return pool
 
 
-class UnifiUnasDriveSensor(UnifiUnasBaseSensor):
+class UnifiUnasDriveSensor(SnapshotResolvedMixin, UnifiUnasBaseSensor):
     """Per-drive UNAS sensor."""
 
     entity_description: DriveSensorDescription
@@ -336,6 +343,10 @@ class UnifiUnasDriveSensor(UnifiUnasBaseSensor):
 
     def _drive(self) -> dict[str, Any] | None:
         """Return currently matching drive by key."""
+        return self._resolved()
+
+    def _resolve(self) -> dict[str, Any] | None:
+        """Look the drive up by key, including legacy key formats."""
         pool, _ = _pool_from_key(self.coordinator.data, self._pool_key)
         if pool is None:
             return None
@@ -371,8 +382,8 @@ class UnifiUnasCacheDriveSensor(UnifiUnasDriveSensor):
     top-level cache-slot list instead of a pool's member list.
     """
 
-    def _drive(self) -> dict[str, Any] | None:
-        """Return the currently matching cache drive by key."""
+    def _resolve(self) -> dict[str, Any] | None:
+        """Look the cache drive up by key."""
         drives = _cache_drives(self.coordinator.data)
         for drive_index, drive in enumerate(drives):
             candidate_key = f"{self._pool_key}_{_drive_key(drive, drive_index)}"

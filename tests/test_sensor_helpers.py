@@ -549,6 +549,112 @@ def test_pool_and_drive_sensor_properties_follow_current_payload() -> None:
     assert drive_sensor.extra_state_attributes is None
 
 
+class _DiscoveryEntry:
+    """Config entry stub for platform setup, without snapshot entities."""
+
+    entry_id = "entry-discovery"
+    unique_id = "device-1"
+    title = "UNAS"
+    data = {"snapshot_buttons_enabled": False}
+    options: dict = {}
+
+    def __init__(self, coordinator) -> None:
+        self.runtime_data = coordinator
+        self.unloads: list = []
+
+    def async_on_unload(self, callback) -> None:
+        self.unloads.append(callback)
+
+
+class _DiscoveryCoordinator(_FakeUpdateCoordinator):
+    """Coordinator stub recording the refresh listeners platform setup adds."""
+
+    def __init__(self, data: dict | None) -> None:
+        super().__init__(data)
+        self.listeners: list = []
+
+    def async_add_listener(self, callback):
+        self.listeners.append(callback)
+        return lambda: None
+
+
+def _added_drive_keys(entities: list) -> set[str]:
+    """Return the drive keys of the drive status entities that were added."""
+    return {
+        entity.extra_state_attributes["drive_key"]
+        for entity in entities
+        if isinstance(entity, sensor_module.UnifiUnasDriveSensor)
+        and entity.entity_description.key == "drive_status"
+    }
+
+
+def test_pool_discovery_adds_drives_appended_to_a_known_pool() -> None:
+    """A RAID expansion must create entities for the drive added to the pool."""
+    pool = {"id": "pool-a", "name": "Primary", "drives": [{"serial": "disk-a"}]}
+    coordinator = _DiscoveryCoordinator({"pools": [pool]})
+    entry = _DiscoveryEntry(coordinator)
+    added: list = []
+
+    asyncio.run(sensor_module.async_setup_entry(None, entry, added.extend))
+
+    assert _added_drive_keys(added) == {"pool_a_disk_a"}
+
+    pool["drives"].append({"serial": "disk-b"})
+    added.clear()
+    for listener in coordinator.listeners:
+        listener()
+
+    assert _added_drive_keys(added) == {"pool_a_disk_b"}
+    assert not [
+        entity for entity in added if isinstance(entity, sensor_module.UnifiUnasPoolSensor)
+    ]
+
+
+def test_drive_sensor_resolves_once_per_coordinator_snapshot() -> None:
+    """A state write reads three properties, but must resolve the payload once."""
+    pool = {
+        "id": "pool-a",
+        "name": "Primary",
+        "drives": [{"serial": "disk-a", "status": "healthy", "temperature": 31}],
+    }
+    coordinator = _FakeUpdateCoordinator({"pools": [pool]})
+    pool_key = sensor_module._pool_key(pool, 0)
+    drive_sensor = sensor_module.UnifiUnasDriveSensor(
+        coordinator,
+        _FakeEntry(),
+        next(
+            description
+            for description in sensor_module.DRIVE_SENSOR_TYPES
+            if description.key == "drive_status"
+        ),
+        pool_key,
+        f"{pool_key}_{sensor_module._drive_key(pool['drives'][0], 0)}",
+        "Primary",
+        "Disk A",
+    )
+
+    resolutions = 0
+    resolve = type(drive_sensor)._resolve
+
+    def _counting_resolve(entity):
+        nonlocal resolutions
+        resolutions += 1
+        return resolve(entity)
+
+    drive_sensor._resolve = lambda: _counting_resolve(drive_sensor)
+
+    for _ in range(2):
+        assert drive_sensor.available is True
+        assert drive_sensor.native_value == "optimal"
+        assert drive_sensor.extra_state_attributes is not None
+    assert resolutions == 1
+
+    # A new snapshot object is a new payload, so the lookup has to run again.
+    coordinator.data = {"pools": [dict(pool)]}
+    assert drive_sensor.native_value == "optimal"
+    assert resolutions == 2
+
+
 def test_binary_sensor_properties_cover_aggregate_and_dynamic_pools() -> None:
     """Binary sensors should expose problem metadata and clear stale pools."""
     pool = {

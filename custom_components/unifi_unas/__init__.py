@@ -380,8 +380,8 @@ def _async_sync_device_registry_metadata(
     """Update device registry metadata that can change after firmware updates."""
     device_identifier = entry.unique_id or entry.entry_id
     device_registry = dr.async_get(hass)
-    device_entry = device_registry.async_get_device(
-        identifiers={(DOMAIN, device_identifier)}
+    device_entry = device_registry.async_get_device_by_identifier(
+        (DOMAIN, device_identifier), entry.entry_id
     )
     if device_entry is None:
         return False

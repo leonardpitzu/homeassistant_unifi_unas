@@ -540,6 +540,52 @@ def test_device_registry_metadata_sync_updates_firmware_version(hass) -> None:
     assert updated.model == "UNAS2W"
 
 
+def test_device_registry_metadata_sync_ignores_foreign_config_entry_device(hass) -> None:
+    """Identifiers are only unique per config entry, so foreign devices must be skipped."""
+    _ensure_repo_custom_components_path()
+    from homeassistant.helpers import device_registry as dr
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.unifi_unas import _async_sync_device_registry_metadata
+    from custom_components.unifi_unas.const import DOMAIN
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="UNAS",
+        unique_id="system-id",
+        data=_entry_data(),
+    )
+    entry.add_to_hass(hass)
+    foreign_entry = MockConfigEntry(domain="other", title="Other", unique_id="other-id")
+    foreign_entry.add_to_hass(hass)
+
+    device_registry = dr.async_get(hass)
+    foreign_device = device_registry.async_get_or_create(
+        config_entry_id=foreign_entry.entry_id,
+        identifiers={(DOMAIN, "system-id")},
+        manufacturer="Ubiquiti",
+        model="UNAS2W",
+        sw_version="5.1.8",
+    )
+    coordinator = SimpleNamespace(
+        data={
+            "_system": {
+                "hardware": {
+                    "shortname": "UNAS2W",
+                    "firmwareVersion": "5.1.10",
+                }
+            }
+        },
+        client=SimpleNamespace(base_url="https://unas.example"),
+    )
+
+    assert _async_sync_device_registry_metadata(hass, entry, coordinator) is False
+
+    untouched = device_registry.async_get(foreign_device.id)
+    assert untouched is not None
+    assert untouched.sw_version == "5.1.8"
+
+
 def test_device_registry_metadata_tracking_registers_refresh_listener(hass) -> None:
     """Device metadata tracking should sync immediately and on coordinator updates."""
     _ensure_repo_custom_components_path()
