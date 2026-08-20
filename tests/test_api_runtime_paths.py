@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from custom_components.unifi_unas import api_transport as api_transport_module
-from custom_components.unifi_unas.api_errors import (
+from custom_components.unifi_unas.api import transport as api_transport_module
+from custom_components.unifi_unas.api.errors import (
     CannotConnect,
     InvalidAuth,
     UnexpectedResponse,

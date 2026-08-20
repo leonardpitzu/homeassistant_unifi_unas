@@ -23,16 +23,16 @@ from .sensor_descriptions import (
     DriveSensorDescription,
     PoolSensorDescription,
 )
-from .snapshot_entities import (
+from .snapshot.entities import (
     UnifiUnasSnapshotTargetEntity,
     async_setup_snapshot_target_entities,
 )
-from .snapshot_inventory import (
+from .snapshot.inventory import (
     SNAPSHOT_INVENTORY_PREVIEW_LIMIT,
     SNAPSHOT_INVENTORY_STATUS_FALLBACK,
     SNAPSHOT_INVENTORY_STATUS_OK,
 )
-from .storage_drives import (
+from .storage.drives import (
     _cache_drives,
     _drive_attributes,
     _drive_key,
@@ -41,7 +41,7 @@ from .storage_drives import (
     _pool_drives,
     _raw_drive_health,
 )
-from .storage_pools import (
+from .storage.pools import (
     _pool_from_key,
     _pool_key,
     _pool_name,

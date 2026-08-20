@@ -2,22 +2,7 @@
 
 from typing import Any
 
-from tests.module_stubs import (
-    install_aiohttp_stub,
-    install_package_stubs,
-    load_const_module,
-    load_integration_module,
-)
-
-
-def _load_snapshot_payload_module():
-    """Load the snapshot payload module with integration stubs."""
-    load_const_module()
-    install_package_stubs()
-    install_aiohttp_stub()
-    return load_integration_module("snapshot_payload")
-
-snapshot_payload_module = _load_snapshot_payload_module()
+from custom_components.unifi_unas.snapshot import payload as snapshot_payload_module
 
 
 def test_snapshot_target_type_uses_aliases_and_shape_detection() -> None:

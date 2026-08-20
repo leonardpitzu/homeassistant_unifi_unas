@@ -3,59 +3,19 @@
 from __future__ import annotations
 
 import json
-import sys
-import types
-from enum import StrEnum
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+
+import pytest
+
+from custom_components.unifi_unas.snapshot import repairs as snapshot_repairs_module
 
 _CREATED: list[dict] = []
 _DELETED: list[tuple[str, str]] = []
 
 
-def _load_snapshot_repairs_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    drive_pkg = types.ModuleType("custom_components.unifi_unas")
-    drive_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = drive_pkg
-
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = object
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    const_pkg = types.ModuleType("homeassistant.const")
-
-    class Platform(StrEnum):
-        BINARY_SENSOR = "binary_sensor"
-        BUTTON = "button"
-        NUMBER = "number"
-        SELECT = "select"
-        SENSOR = "sensor"
-        SWITCH = "switch"
-        TIME = "time"
-        UPDATE = "update"
-
-    const_pkg.Platform = Platform
-    sys.modules["homeassistant.const"] = const_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    issue_registry_pkg = types.ModuleType("homeassistant.helpers.issue_registry")
-    issue_registry_pkg.IssueSeverity = types.SimpleNamespace(WARNING="warning")
+@pytest.fixture(autouse=True)
+def _capture_issue_registry_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Record issue-registry calls instead of touching a real registry."""
 
     def _create_issue(*args, **kwargs) -> None:
         _CREATED.append({"args": args, "kwargs": kwargs})
@@ -63,23 +23,12 @@ def _load_snapshot_repairs_module():
     def _delete_issue(hass, domain, issue_id) -> None:
         _DELETED.append((domain, issue_id))
 
-    issue_registry_pkg.async_create_issue = _create_issue
-    issue_registry_pkg.async_delete_issue = _delete_issue
-    sys.modules["homeassistant.helpers.issue_registry"] = issue_registry_pkg
-
-    repairs_spec = spec_from_file_location(
-        "custom_components.unifi_unas.snapshot_repairs",
-        package_root / "snapshot_repairs.py",
+    monkeypatch.setattr(
+        snapshot_repairs_module.ir, "async_create_issue", _create_issue
     )
-    if repairs_spec is None or repairs_spec.loader is None:
-        raise RuntimeError("Could not load snapshot_repairs module spec")
-    repairs_module = module_from_spec(repairs_spec)
-    sys.modules["custom_components.unifi_unas.snapshot_repairs"] = repairs_module
-    repairs_spec.loader.exec_module(repairs_module)
-    return repairs_module
-
-
-snapshot_repairs_module = _load_snapshot_repairs_module()
+    monkeypatch.setattr(
+        snapshot_repairs_module.ir, "async_delete_issue", _delete_issue
+    )
 
 
 class _FakeEntry:

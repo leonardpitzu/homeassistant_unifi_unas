@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 
-from .const import (
+from ..const import (
     CONF_WOL_ENABLED,
     CONF_WOL_MAC_ADDRESS,
     DOMAIN,

@@ -4,17 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from tests import module_stubs
-
-module_stubs.install_package_stubs()
-module_stubs.install_homeassistant_const_stub(
-    CONF_HOST="host",
-    DEFAULT_PORT=443,
-)
-module_stubs.load_const_module()
-module_stubs.load_wake_on_lan_module()
-discovery_identity_module = module_stubs.load_integration_module("discovery_identity")
-
+from custom_components.unifi_unas.discovery import identity as discovery_identity_module
 
 CONF_DISCOVERY_LAST_SEEN = discovery_identity_module.CONF_DISCOVERY_LAST_SEEN
 

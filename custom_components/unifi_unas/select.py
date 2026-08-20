@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api_errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
+from .api.errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
 from .const import (
     CONF_FAN_CONTROL_ENABLED,
     DEFAULT_FAN_CONTROL_ENABLED,
@@ -27,11 +27,11 @@ from .entry_options import entry_bool
 from .exceptions import unifi_unas_error, unifi_unas_validation_error
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
 from .security import safe_error_text
-from .snapshot_entities import (
+from .snapshot.entities import (
     UnifiUnasSnapshotTargetEntity,
     async_setup_snapshot_target_entities,
 )
-from .snapshot_schedule import _snapshot_first_schedule_day
+from .snapshot.schedule import _snapshot_first_schedule_day
 
 WEEKDAY_OPTION_VALUES = {
     option: index for index, option in enumerate(SNAPSHOT_WEEKDAY_OPTIONS)

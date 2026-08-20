@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 
-from . import storage_pools
 from .sensor_types import (
     AggregateBinarySensorDescription,
     PoolBinarySensorDescription,
 )
+from .storage import pools as storage_pools
 
 _DEVICE_ONLINE = AggregateBinarySensorDescription(
     key="device_online",

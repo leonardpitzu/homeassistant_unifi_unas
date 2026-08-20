@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from aiohttp import ClientResponse, ClientSession
 
-from .api_errors import CannotConnect, InvalidAuth
-from .const import LOGIN_PATH
-from .security import safe_error_text
-from .wake_on_lan import normalize_mac_address
+from ..const import LOGIN_PATH
+from ..security import safe_error_text
+from ..wake_on_lan import normalize_mac_address
+from .errors import CannotConnect, InvalidAuth
 
 # Cookie name only, not a secret value.
 TOKEN_COOKIE_NAME = "TOKEN"  # nosec B105

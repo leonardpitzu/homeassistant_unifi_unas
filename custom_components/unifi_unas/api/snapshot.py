@@ -6,10 +6,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
-from .api_errors import InvalidAuth, UnexpectedResponse, UnsupportedFeature
-from .security import safe_error_text
-from .snapshot_inventory import extract_snapshot_inventory
-from .snapshot_paths import (
+from ..security import safe_error_text
+from ..snapshot.inventory import extract_snapshot_inventory
+from ..snapshot.paths import (
     SHARED_DRIVE_SNAPSHOTS_PATH,
     SNAPSHOT_ENDPOINT_UNAVAILABLE_HTTP_STATUSES,
     SNAPSHOT_SETTINGS_PATH,
@@ -17,14 +16,15 @@ from .snapshot_paths import (
     _snapshot_inventory_paths,
     _snapshot_settings_write_paths,
 )
-from .snapshot_payload import extract_snapshot_settings
-from .snapshot_types import normalize_snapshot_target_type, snapshot_target_type
-from .snapshot_values import _payload_debug_shape
-from .snapshot_write import (
+from ..snapshot.payload import extract_snapshot_settings
+from ..snapshot.types import normalize_snapshot_target_type, snapshot_target_type
+from ..snapshot.values import _payload_debug_shape
+from ..snapshot.write import (
     SnapshotSettingsUpdate,
     _snapshot_settings_delete_required,
     _snapshot_settings_write_body,
 )
+from .errors import InvalidAuth, UnexpectedResponse, UnsupportedFeature
 
 _LOGGER = logging.getLogger(__name__)
 _SNAPSHOT_CAPABILITY_TARGET_TYPES = ("shared", "mydrive")

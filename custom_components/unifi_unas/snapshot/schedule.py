@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .const import SNAPSHOT_SCHEDULE_API_VALUES
-from .snapshot_values import _first_int_value, _int_value, _value_from_dict
+from ..const import SNAPSHOT_SCHEDULE_API_VALUES
+from .values import _first_int_value, _int_value, _value_from_dict
 
 SCHEDULE_TIME_RE = re.compile(
     r"^\s*(?P<hour>\d{1,2}):(?P<minute>\d{1,2})(?::\d{1,2})?\s*"

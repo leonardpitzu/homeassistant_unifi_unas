@@ -59,7 +59,7 @@ from .const import (
 from .coordinator import UnifiUnasCoordinator
 from .device import build_device_info
 from .discovery import feature_defaults_from_system_payload
-from .discovery_identity import (
+from .discovery.identity import (
     apply_discovery_identity_defaults,
     discovery_mac_key,
     entry_matches_discovery_flow_context,
@@ -72,7 +72,7 @@ from .entry_options import (
 from .entry_reload import entry_reload_signature
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry_or_none
 from .services import async_register_services
-from .snapshot_types import (
+from .snapshot.types import (
     snapshot_create_button_supported_for_inventory,
     snapshot_target_key,
     snapshot_target_slug,
@@ -189,7 +189,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: UnifiDriveConfigEntry) 
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        from .snapshot_entities import _clear_snapshot_target_entities_for_coordinator
+        from .snapshot.entities import _clear_snapshot_target_entities_for_coordinator
 
         coordinator = coordinator_from_entry_or_none(entry) or hass.data.get(
             DOMAIN, {}

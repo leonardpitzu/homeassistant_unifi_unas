@@ -6,7 +6,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from .snapshot_inventory import snapshot_inventory_error_is_sticky
+from .inventory import snapshot_inventory_error_is_sticky
 
 
 def normalize_snapshot_target_type(value: object) -> str:

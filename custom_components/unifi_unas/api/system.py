@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from .api_errors import InvalidAuth
-from .const import POWEROFF_PATH, REBOOT_PATH
+from ..const import POWEROFF_PATH, REBOOT_PATH
+from .errors import InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -4,123 +4,57 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
+import threading
 import types
 from typing import Any
 
-from tests.module_stubs import (
-    install_homeassistant_const_stub,
-    install_package_stubs,
-    load_const_module,
-    load_integration_module,
-)
+import pytest
+from homeassistant import config_entries
+from homeassistant.helpers import frame
+
+from custom_components.unifi_unas import coordinator as coordinator_module
+from custom_components.unifi_unas.snapshot import repairs as snapshot_repairs_module
 
 
-def _load_coordinator_module():
-    install_package_stubs()
-    install_homeassistant_const_stub(CONF_SCAN_INTERVAL="scan_interval")
+@pytest.fixture(autouse=True)
+def _integration_runtime_context(monkeypatch: pytest.MonkeyPatch) -> Any:
+    """Reproduce the Home Assistant runtime context integrations are built in.
 
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = object
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    exceptions_pkg = types.ModuleType("homeassistant.exceptions")
-
-    class ConfigEntryAuthFailed(Exception):
-        """Config entry auth failure stub."""
-
-    exceptions_pkg.ConfigEntryAuthFailed = ConfigEntryAuthFailed
-    sys.modules["homeassistant.exceptions"] = exceptions_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    update_coordinator_pkg = types.ModuleType("homeassistant.helpers.update_coordinator")
-
-    class UpdateFailed(Exception):
-        """Update failure stub."""
-
-    class DataUpdateCoordinator:
-        """Data update coordinator stub."""
-
-        @classmethod
-        def __class_getitem__(cls, item):
-            return cls
-
-        def __init__(self, hass, *, logger, name, update_interval) -> None:
-            self.hass = hass
-            self.logger = logger
-            self.name = name
-            self.update_interval = update_interval
-            self.last_update_success = True
-            self.data = None
-
-        async def async_config_entry_first_refresh(self) -> None:
-            self.data = await self._async_update_data()
-
-        def async_set_updated_data(self, data) -> None:
-            self.data = data
-
-    update_coordinator_pkg.DataUpdateCoordinator = DataUpdateCoordinator
-    update_coordinator_pkg.UpdateFailed = UpdateFailed
-    sys.modules["homeassistant.helpers.update_coordinator"] = update_coordinator_pkg
-
-    api_pkg = types.ModuleType("custom_components.unifi_unas.api")
-
-    class CannotConnect(Exception):
-        """API connection error stub."""
-
-    class InvalidAuth(Exception):
-        """API auth error stub."""
-
-    class UnexpectedResponse(Exception):
-        """API response error stub."""
-
-    class UnsupportedFeature(Exception):
-        """Unsupported feature error stub."""
-
-    api_pkg.CannotConnect = CannotConnect
-    api_pkg.InvalidAuth = InvalidAuth
-    api_pkg.UnexpectedResponse = UnexpectedResponse
-    api_pkg.UnsupportedFeature = UnsupportedFeature
-    api_pkg.UnifiUnasApiClient = object
-    sys.modules["custom_components.unifi_unas.api"] = api_pkg
-
-    snapshot_repairs_pkg = types.ModuleType(
-        "custom_components.unifi_unas.snapshot_repairs"
+    Home Assistant sets up the frame helper and publishes the entry being set up
+    on the ``current_entry`` ContextVar, which ``DataUpdateCoordinator`` reads.
+    Repair issues are routed to no-ops because there is no issue registry here.
+    """
+    frame.async_setup(
+        types.SimpleNamespace(loop_thread_id=threading.get_ident(), loop=None)
     )
-    snapshot_repairs_pkg.async_clear_snapshot_issues = lambda *args, **kwargs: None
-    snapshot_repairs_pkg.async_clear_snapshot_action_issues = (
-        lambda *args, **kwargs: None
-    )
-    snapshot_repairs_pkg.async_clear_snapshot_target_missing_issue = (
-        lambda *args, **kwargs: None
-    )
-    snapshot_repairs_pkg.async_create_snapshot_action_issue = lambda *args, **kwargs: None
-    snapshot_repairs_pkg.async_create_snapshot_read_issue = (
-        lambda *args, **kwargs: None
-    )
-    snapshot_repairs_pkg.async_update_snapshot_target_missing_issue = (
-        lambda *args, **kwargs: None
-    )
-    snapshot_repairs_pkg.async_update_snapshot_read_issue = (
-        lambda *args, **kwargs: None
-    )
-    sys.modules["custom_components.unifi_unas.snapshot_repairs"] = snapshot_repairs_pkg
+    original_init = coordinator_module.UnifiUnasCoordinator.__init__
 
-    load_const_module()
-    load_integration_module("snapshot_types")
-    return load_integration_module("coordinator")
+    def _init(self, hass, client, entry, *args, **kwargs) -> None:
+        token = config_entries.current_entry.set(entry)
+        try:
+            original_init(self, hass, client, entry, *args, **kwargs)
+        finally:
+            config_entries.current_entry.reset(token)
+
+    monkeypatch.setattr(coordinator_module.UnifiUnasCoordinator, "__init__", _init)
+    monkeypatch.setattr(
+        snapshot_repairs_module.ir, "async_create_issue", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
+        snapshot_repairs_module.ir, "async_delete_issue", lambda *args, **kwargs: None
+    )
+    yield
+    frame.async_setup(None)
 
 
-coordinator_module = _load_coordinator_module()
+class _ConfigEntryDouble:
+    """Config entry surface the real DataUpdateCoordinator relies on."""
+
+    def async_on_unload(self, func: Any) -> Any:
+        return func
 
 
-class _FakeEntry:
+class _FakeEntry(_ConfigEntryDouble):
     data = {"scan_interval": 30}
 
 
@@ -275,7 +209,7 @@ class _FakeOptionalFailureClient(_FakePollingInventoryClient):
         raise coordinator_module.CannotConnect("backup endpoint offline")
 
 
-class _FakeSnapshotPollingEntry:
+class _FakeSnapshotPollingEntry(_ConfigEntryDouble):
     data = {
         "scan_interval": 30,
         "fan_control_enabled": False,
@@ -285,7 +219,7 @@ class _FakeSnapshotPollingEntry:
     unique_id = "device"
 
 
-class _FakeOptionsEntry:
+class _FakeOptionsEntry(_ConfigEntryDouble):
     data = {
         "scan_interval": 30,
         "fan_control_enabled": True,
@@ -348,6 +282,8 @@ def test_config_entry_first_refresh_defers_optional_endpoint_reads() -> None:
         options={},
         entry_id="entry",
         unique_id="device",
+        state=config_entries.ConfigEntryState.SETUP_IN_PROGRESS,
+        async_on_unload=lambda func: func,
     )
     coordinator = coordinator_module.UnifiUnasCoordinator(
         types.SimpleNamespace(),
@@ -712,6 +648,7 @@ def test_optional_endpoint_failures_do_not_break_core_storage_refresh() -> None:
         options={"fan_control_enabled": True, "snapshot_buttons_enabled": False},
         entry_id="entry",
         unique_id="device",
+        async_on_unload=lambda func: func,
     )
     coordinator = coordinator_module.UnifiUnasCoordinator(
         types.SimpleNamespace(),

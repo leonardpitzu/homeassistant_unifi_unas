@@ -6,8 +6,8 @@ from collections.abc import Mapping
 from typing import Any
 from urllib.parse import quote
 
-from .api_errors import UnexpectedResponse
-from .snapshot_types import snapshot_target_type
+from ..api.errors import UnexpectedResponse
+from .types import snapshot_target_type
 
 SNAPSHOT_ENDPOINT_UNAVAILABLE_HTTP_STATUSES = {404, 405}
 SNAPSHOT_SETTINGS_PATH = "/proxy/drive/api/v1/systems/snapshot"

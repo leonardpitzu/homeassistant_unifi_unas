@@ -2,10 +2,7 @@
 
 from types import SimpleNamespace
 
-from tests.module_stubs import install_package_stubs, load_integration_module
-
-install_package_stubs()
-entry_options = load_integration_module("entry_options")
+from custom_components.unifi_unas import entry_options
 
 
 def test_entry_value_prefers_options_over_data() -> None:

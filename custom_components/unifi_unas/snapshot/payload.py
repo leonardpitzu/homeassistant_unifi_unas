@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from .snapshot_schedule import _snapshot_schedule_frequency, _snapshot_schedule_time
-from .snapshot_types import normalize_snapshot_target_type
-from .snapshot_values import (
+from .schedule import _snapshot_schedule_frequency, _snapshot_schedule_time
+from .types import normalize_snapshot_target_type
+from .values import (
     _dict_from_item,
     _first_bool_value,
     _first_int_value,

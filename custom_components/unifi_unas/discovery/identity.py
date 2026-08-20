@@ -9,7 +9,7 @@ from typing import Any
 
 from homeassistant.const import CONF_HOST
 
-from .const import (
+from ..const import (
     CONF_DISCOVERY_CONFIDENCE,
     CONF_DISCOVERY_HOST_ALIASES,
     CONF_DISCOVERY_IDENTITY_CONFLICTS,
@@ -19,8 +19,8 @@ from .const import (
     CONF_WOL_MAC_ADDRESS,
     DEFAULT_PORT,
 )
-from .entry_options import merged_entry_data_options
-from .wake_on_lan import normalize_mac_address
+from ..entry_options import merged_entry_data_options
+from ..wake_on_lan import normalize_mac_address
 
 DISCOVERY_FLOW_CONTEXT_MAC = "unifi_unas_discovery_mac"
 DISCOVERY_FLOW_CONTEXT_HOSTS = "unifi_unas_discovery_hosts"

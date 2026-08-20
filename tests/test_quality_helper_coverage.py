@@ -2,39 +2,15 @@
 
 from __future__ import annotations
 
-import sys
-import types
 from types import SimpleNamespace
 
 import pytest
 
-from tests import module_stubs
-
-module_stubs.install_package_stubs()
-module_stubs.install_homeassistant_const_stub(
-    CONF_HOST="host",
-    CONF_PORT="port",
-    DEFAULT_PORT=443,
-)
-module_stubs.load_const_module()
-module_stubs.load_wake_on_lan_module()
-
-homeassistant_pkg = sys.modules.setdefault("homeassistant", types.ModuleType("homeassistant"))
-core_pkg = types.ModuleType("homeassistant.core")
-core_pkg.HomeAssistant = object
-sys.modules["homeassistant.core"] = core_pkg
-homeassistant_pkg.core = core_pkg
-
-config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-config_entries_pkg.ConfigEntry = object
-sys.modules["homeassistant.config_entries"] = config_entries_pkg
-homeassistant_pkg.config_entries = config_entries_pkg
-
-config_flow_identity = module_stubs.load_integration_module("config_flow_identity")
-discovery_common = module_stubs.load_integration_module("discovery_common")
-runtime_module = module_stubs.load_integration_module("runtime")
-snapshot_paths = module_stubs.load_integration_module("snapshot_paths")
-snapshot_values = module_stubs.load_integration_module("snapshot_values")
+from custom_components.unifi_unas import runtime as runtime_module
+from custom_components.unifi_unas.config_flow import identity as config_flow_identity
+from custom_components.unifi_unas.discovery import common as discovery_common
+from custom_components.unifi_unas.snapshot import paths as snapshot_paths
+from custom_components.unifi_unas.snapshot import values as snapshot_values
 
 
 class _EntryList:

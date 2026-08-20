@@ -249,7 +249,7 @@ def test_aborts_matching_discovery_flow_by_mac() -> None:
         CONF_DISCOVERY_MAC_ADDRESS,
         DOMAIN,
     )
-    from custom_components.unifi_unas.discovery_identity import (
+    from custom_components.unifi_unas.discovery.identity import (
         DISCOVERY_FLOW_CONTEXT_MAC,
     )
 
@@ -338,7 +338,7 @@ def test_discovery_flow_context_matches_stored_host_alias() -> None:
     """Pending discovery flows should also match stored host aliases."""
     _ensure_repo_custom_components_path()
 
-    from custom_components.unifi_unas.discovery_identity import (
+    from custom_components.unifi_unas.discovery.identity import (
         DISCOVERY_FLOW_CONTEXT_HOSTS,
         entry_matches_discovery_flow_context,
     )
@@ -781,7 +781,7 @@ async def test_removes_unsupported_snapshot_create_buttons(hass) -> None:
         _async_remove_unsupported_snapshot_create_buttons,
     )
     from custom_components.unifi_unas.const import DOMAIN
-    from custom_components.unifi_unas.snapshot_types import (
+    from custom_components.unifi_unas.snapshot.types import (
         snapshot_target_key,
         snapshot_target_slug,
     )
@@ -911,7 +911,7 @@ def test_remove_unsupported_snapshot_create_buttons_skips_invalid_entries(
         _async_remove_unsupported_snapshot_create_buttons,
     )
     from custom_components.unifi_unas.const import DOMAIN
-    from custom_components.unifi_unas.snapshot_types import (
+    from custom_components.unifi_unas.snapshot.types import (
         snapshot_target_key,
         snapshot_target_slug,
     )
@@ -967,7 +967,7 @@ async def test_retries_unsupported_snapshot_create_button_cleanup_after_refresh(
         _async_track_unsupported_snapshot_create_button_cleanup,
     )
     from custom_components.unifi_unas.const import DOMAIN
-    from custom_components.unifi_unas.snapshot_types import (
+    from custom_components.unifi_unas.snapshot.types import (
         snapshot_target_key,
         snapshot_target_slug,
     )

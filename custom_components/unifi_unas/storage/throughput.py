@@ -7,9 +7,9 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorStateClass
 
-from .sensor_types import AggregateSensorDescription
-from .storage_common import _first_number, _text
-from .system_metadata import normalized_token as _normalized_token
+from ..sensor_types import AggregateSensorDescription
+from ..system_metadata import normalized_token as _normalized_token
+from .common import _first_number, _text
 
 THROUGHPUT_DISK_LIST_KEYS = ("disks", "drives", "hdds")
 THROUGHPUT_CONTAINER_KEYS = ("storage", "storageInfo", "storage_info", "data", "result")

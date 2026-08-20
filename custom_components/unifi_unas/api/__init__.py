@@ -7,15 +7,15 @@ from typing import Any
 
 from aiohttp import ClientSession
 
-from .api_auth import ApiAuthMixin
-from .api_backup import ApiBackupMixin
-from .api_fan import ApiFanMixin
-from .api_snapshot import ApiSnapshotMixin
-from .api_storage import ApiStorageMixin
-from .api_system import ApiSystemMixin
-from .api_transport import ApiTransportMixin
-from .api_updates import ApiUpdatesMixin
-from .url_helpers import build_console_url, format_host_for_url
+from ..url_helpers import build_console_url, format_host_for_url
+from .auth import ApiAuthMixin
+from .backup import ApiBackupMixin
+from .fan import ApiFanMixin
+from .snapshot import ApiSnapshotMixin
+from .storage import ApiStorageMixin
+from .system import ApiSystemMixin
+from .transport import ApiTransportMixin
+from .updates import ApiUpdatesMixin
 
 __all__ = [
     "UnifiUnasApiClient",

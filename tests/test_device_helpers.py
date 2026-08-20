@@ -1,76 +1,10 @@
 """Unit tests for Home Assistant device metadata helpers."""
 
-import sys
+from __future__ import annotations
+
 import types
-from enum import StrEnum
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 
-
-def _load_device_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    drive_pkg = types.ModuleType("custom_components.unifi_unas")
-    drive_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = drive_pkg
-
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = object
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    const_pkg = types.ModuleType("homeassistant.const")
-
-    class Platform(StrEnum):
-        BINARY_SENSOR = "binary_sensor"
-        BUTTON = "button"
-        NUMBER = "number"
-        SELECT = "select"
-        SENSOR = "sensor"
-        SWITCH = "switch"
-        TIME = "time"
-        UPDATE = "update"
-
-    const_pkg.Platform = Platform
-    sys.modules["homeassistant.const"] = const_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    device_registry_pkg = types.ModuleType("homeassistant.helpers.device_registry")
-    device_registry_pkg.DeviceInfo = dict
-    sys.modules["homeassistant.helpers.device_registry"] = device_registry_pkg
-
-    const_spec = spec_from_file_location(
-        "custom_components.unifi_unas.const",
-        package_root / "const.py",
-    )
-    if const_spec is None or const_spec.loader is None:
-        raise RuntimeError("Could not load const module spec")
-    const_module = module_from_spec(const_spec)
-    sys.modules["custom_components.unifi_unas.const"] = const_module
-    const_spec.loader.exec_module(const_module)
-
-    device_spec = spec_from_file_location(
-        "custom_components.unifi_unas.device",
-        package_root / "device.py",
-    )
-    if device_spec is None or device_spec.loader is None:
-        raise RuntimeError("Could not load device module spec")
-    device_module = module_from_spec(device_spec)
-    sys.modules["custom_components.unifi_unas.device"] = device_module
-    device_spec.loader.exec_module(device_module)
-    return device_module
-
-
-device_module = _load_device_module()
+from custom_components.unifi_unas import device as device_module
 
 
 class _FakeClient:

@@ -1,30 +1,16 @@
 """Shared API test helpers."""
 
-from tests.module_stubs import load_api_module
+from custom_components.unifi_unas.api import UnifiUnasApiClient
+from custom_components.unifi_unas.api import snapshot as api_snapshot_module
+from custom_components.unifi_unas.snapshot import schedule as snapshot_schedule_module
 
-
-def _load_api_client_class():
-    api_module = load_api_module()
-    api_snapshot_module = __import__(
-        "custom_components.unifi_unas.api_snapshot",
-        fromlist=["ApiSnapshotMixin"],
-    )
-    snapshot_schedule_module = __import__(
-        "custom_components.unifi_unas.snapshot_schedule",
-        fromlist=["_snapshot_schedule_days"],
-    )
-    return (
-        api_module.UnifiUnasApiClient,
-        api_snapshot_module,
-        snapshot_schedule_module,
-    )
-
-
-(
-    UnifiUnasApiClient,
-    api_snapshot_module,
-    snapshot_schedule_module,
-) = _load_api_client_class()
+__all__ = [
+    "SnapshotStatusClient",
+    "SnapshotWriteClient",
+    "UnifiUnasApiClient",
+    "api_snapshot_module",
+    "snapshot_schedule_module",
+]
 
 
 class SnapshotWriteClient(api_snapshot_module.ApiSnapshotMixin):

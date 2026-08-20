@@ -9,29 +9,29 @@ from typing import Any, Protocol
 
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL, CONF_VERIFY_SSL
 
-from .const import (
+from ..const import (
     CONF_WOL_ENABLED,
     CONF_WOL_MAC_ADDRESS,
     DEFAULT_PORT,
     DEFAULT_SSL,
     DEFAULT_VERIFY_SSL,
 )
-from .discovery_common import (
+from .common import (
     clean_host_label as _clean_host_label,
 )
-from .discovery_common import (
+from .common import (
     clean_text as _clean_text,
 )
-from .discovery_common import (
+from .common import (
     device_key as _device_key,
 )
-from .discovery_common import (
+from .common import (
     mac_from_eui64_ipv6 as _mac_from_eui64_ipv6,
 )
-from .discovery_common import (
+from .common import (
     parse_bool as _parse_bool,
 )
-from .discovery_identity import discovery_host_key, discovery_mac_key
+from .identity import discovery_host_key, discovery_mac_key
 
 CONF_DISCOVERED_DEVICE = "discovered_device"
 MANUAL_DISCOVERY_VALUE = "__manual__"

@@ -5,7 +5,7 @@ import asyncio
 import pytest
 from aiohttp import ClientError
 
-from custom_components.unifi_unas.api_errors import CannotConnect
+from custom_components.unifi_unas.api.errors import CannotConnect
 from custom_components.unifi_unas.security import safe_error_text
 from tests.api_client_stubs import UnifiUnasApiClient
 

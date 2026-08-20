@@ -7,17 +7,25 @@ registries together in the order the entities should be created.
 
 from __future__ import annotations
 
-from . import (
-    storage_capacity,
-    storage_drives,
-    storage_pools,
-    storage_system,
-    storage_throughput,
-)
 from .sensor_types import (
     AggregateSensorDescription,
     DriveSensorDescription,
     PoolSensorDescription,
+)
+from .storage import (
+    capacity as storage_capacity,
+)
+from .storage import (
+    drives as storage_drives,
+)
+from .storage import (
+    pools as storage_pools,
+)
+from .storage import (
+    system as storage_system,
+)
+from .storage import (
+    throughput as storage_throughput,
 )
 
 AGGREGATE_SENSOR_TYPES: tuple[AggregateSensorDescription, ...] = (

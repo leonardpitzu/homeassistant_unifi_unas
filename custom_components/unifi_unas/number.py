@@ -13,11 +13,11 @@ from .const import MAX_SNAPSHOT_LIMIT, MIN_SNAPSHOT_LIMIT
 from .coordinator import UnifiUnasCoordinator
 from .exceptions import unifi_unas_validation_error
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
-from .snapshot_entities import (
+from .snapshot.entities import (
     UnifiUnasSnapshotTargetEntity,
     async_setup_snapshot_target_entities,
 )
-from .snapshot_schedule import _snapshot_first_schedule_day
+from .snapshot.schedule import _snapshot_first_schedule_day
 
 PARALLEL_UPDATES = 1
 

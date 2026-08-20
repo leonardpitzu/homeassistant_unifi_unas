@@ -1,37 +1,10 @@
 """Unit tests for Wake-on-LAN helper utilities."""
 
 import asyncio
-import sys
-import types
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 
 import pytest
 
-
-def _load_wol_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-    wol_path = package_root / "wake_on_lan.py"
-
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    unas_pkg = types.ModuleType("custom_components.unifi_unas")
-    unas_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = unas_pkg
-
-    wol_spec = spec_from_file_location("custom_components.unifi_unas.wake_on_lan", wol_path)
-    if wol_spec is None or wol_spec.loader is None:
-        raise RuntimeError("Could not load wake_on_lan module spec")
-    wol_module = module_from_spec(wol_spec)
-    sys.modules["custom_components.unifi_unas.wake_on_lan"] = wol_module
-    wol_spec.loader.exec_module(wol_module)
-    return wol_module
-
-
-wol_module = _load_wol_module()
+from custom_components.unifi_unas import wake_on_lan as wol_module
 
 
 def test_mask_mac_address_shows_only_last_two_bytes() -> None:

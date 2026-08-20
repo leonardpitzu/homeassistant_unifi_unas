@@ -9,13 +9,14 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 
-from .sensor_types import (
+from ..sensor_types import (
     AggregateBinarySensorDescription,
     AggregateSensorDescription,
     PoolBinarySensorDescription,
     PoolSensorDescription,
 )
-from .storage_common import (
+from ..system_metadata import normalized_token as _normalized_token
+from .common import (
     DEGRADED_STATUSES,
     DISK_PROBLEM_HINTS,
     HEALTHY_STATUSES,
@@ -26,7 +27,7 @@ from .storage_common import (
     _slug,
     _text,
 )
-from .storage_drives import (
+from .drives import (
     _cache_drives,
     _drive_life_span,
     _pool_at_risk_drive_count,
@@ -35,7 +36,6 @@ from .storage_drives import (
     _pool_drive_temperatures,
     _pool_drives,
 )
-from .system_metadata import normalized_token as _normalized_token
 
 RAID_LEVEL_KEYS = (
     "raidType",

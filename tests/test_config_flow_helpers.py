@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import sys
 import types
 from pathlib import Path
 from types import MappingProxyType
@@ -10,13 +9,9 @@ from typing import Any
 
 import pytest
 
-from tests.module_stubs import (
-    install_aiohttp_stub,
-    install_homeassistant_const_stub,
-    install_package_stubs,
-    load_const_module,
-    load_integration_module,
-)
+from custom_components.unifi_unas import config_flow as config_flow_module
+from custom_components.unifi_unas import discovery as discovery_module
+from custom_components.unifi_unas.config_flow import schema as config_flow_schema_module
 
 _UTF8_BOM = b"\xef\xbb\xbf"
 
@@ -30,117 +25,6 @@ def _load_json_translation(path: Path) -> dict[str, Any]:
     return json.loads(raw.decode("utf-8"))
 
 
-def _install_base_stubs() -> None:
-    install_package_stubs()
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-
-    class ConfigFlow:
-        def __init_subclass__(cls, **kwargs):
-            super().__init_subclass__()
-
-    class OptionsFlow:
-        """Minimal OptionsFlow stub."""
-
-    config_entries_pkg.ConfigFlow = ConfigFlow
-    config_entries_pkg.ConfigEntry = object
-    config_entries_pkg.ConfigFlowResult = dict
-    config_entries_pkg.OptionsFlow = OptionsFlow
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-    ha_pkg.config_entries = config_entries_pkg
-
-    install_homeassistant_const_stub(
-        CONF_API_KEY="api_key",
-        CONF_HOST="host",
-        CONF_PASSWORD="password",
-        CONF_PORT="port",
-        CONF_SCAN_INTERVAL="scan_interval",
-        CONF_SSL="ssl",
-        CONF_USERNAME="username",
-        CONF_VERIFY_SSL="verify_ssl",
-    )
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.callback = lambda func: func
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    util_pkg = types.ModuleType("homeassistant.util")
-    util_logging_pkg = types.ModuleType("homeassistant.util.logging")
-    util_logging_pkg.log_exception = lambda *args, **kwargs: None
-    util_pkg.logging = util_logging_pkg
-    ha_pkg.util = util_pkg
-    sys.modules["homeassistant.util"] = util_pkg
-    sys.modules["homeassistant.util.logging"] = util_logging_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    aiohttp_client_pkg = types.ModuleType("homeassistant.helpers.aiohttp_client")
-    aiohttp_client_pkg.async_create_clientsession = lambda *args, **kwargs: object()
-    sys.modules["homeassistant.helpers.aiohttp_client"] = aiohttp_client_pkg
-
-    install_aiohttp_stub(include_cookie_jar=True)
-
-    vol_pkg = types.ModuleType("voluptuous")
-    vol_pkg.Required = lambda key, default=None: key
-    vol_pkg.Optional = lambda key, default=None: key
-    vol_pkg.Schema = lambda schema: schema
-    vol_pkg.All = lambda *validators: validators[-1] if validators else (lambda value: value)
-    vol_pkg.Coerce = lambda target: target
-    vol_pkg.In = lambda values: values
-    vol_pkg.Range = lambda **kwargs: (lambda value: value)
-    sys.modules["voluptuous"] = vol_pkg
-
-    api_pkg = types.ModuleType("custom_components.unifi_unas.api")
-
-    class CannotConnect(Exception):
-        """Raised by the API stub when the device is unreachable."""
-
-    class InvalidAuth(Exception):
-        """Raised by the API stub when auth fails."""
-
-    class UnexpectedResponse(Exception):
-        """Raised by the API stub for unsupported payloads."""
-
-    api_pkg.CannotConnect = CannotConnect
-    api_pkg.InvalidAuth = InvalidAuth
-    api_pkg.UnexpectedResponse = UnexpectedResponse
-    api_pkg.UnifiUnasApiClient = type("UnifiUnasApiClient", (), {})
-    sys.modules["custom_components.unifi_unas.api"] = api_pkg
-
-    wol_pkg = types.ModuleType("custom_components.unifi_unas.wake_on_lan")
-
-    def _normalize_mac_address(value: str) -> str:
-        compact = "".join(
-            char for char in value.strip() if char.lower() in "0123456789abcdef"
-        )
-        if len(compact) != 12:
-            raise ValueError("Invalid MAC address")
-        return ":".join(compact[index : index + 2] for index in range(0, 12, 2)).lower()
-
-    wol_pkg.normalize_mac_address = _normalize_mac_address
-    wol_pkg.validate_ipv4_address = lambda value: value
-    sys.modules["custom_components.unifi_unas.wake_on_lan"] = wol_pkg
-
-
-def _load_config_flow_module():
-    _install_base_stubs()
-    load_const_module()
-    return load_integration_module("config_flow")
-
-
-config_flow_module = _load_config_flow_module()
-config_flow_schema_module = sys.modules[
-    "custom_components.unifi_unas.config_flow_schema"
-]
-discovery_module = sys.modules["custom_components.unifi_unas.discovery"]
-
-
-def _load_discovery_module():
-    return discovery_module
 
 
 def test_config_flow_translations_cover_all_form_fields() -> None:
@@ -249,7 +133,6 @@ def test_config_flow_schema_bounds_numeric_defaults() -> None:
 
 def test_unifi_discovery_filters_multiple_unas_devices_and_wol_defaults() -> None:
     """UniFi discovery should keep multiple UNAS devices and WOL state."""
-    discovery_module = _load_discovery_module()
 
     devices = [
         types.SimpleNamespace(
@@ -297,7 +180,6 @@ def test_unifi_discovery_filters_multiple_unas_devices_and_wol_defaults() -> Non
 
 def test_unifi_discovery_uses_injected_async_scanner() -> None:
     """Discovery should use the injected scanner without importing network tools."""
-    discovery_module = _load_discovery_module()
 
     class _Scanner:
         async def async_scan(self, *, timeout: int, consoles_only: bool = True):
@@ -328,7 +210,6 @@ def test_unifi_discovery_returns_empty_when_scanner_dependency_is_missing(
     monkeypatch,
 ) -> None:
     """Discovery should fail closed when the optional scanner is unavailable."""
-    discovery_module = _load_discovery_module()
 
     def _import_module(name: str) -> object:
         if name == "unifi_discovery":
@@ -342,7 +223,6 @@ def test_unifi_discovery_returns_empty_when_scanner_dependency_is_missing(
 
 def test_unifi_discovery_skips_unas_candidates_without_host() -> None:
     """UNAS-looking discovery records without a usable host should be ignored."""
-    discovery_module = _load_discovery_module()
 
     result = discovery_module.discovered_unas_devices_from_scan(
         [
@@ -359,7 +239,6 @@ def test_unifi_discovery_skips_unas_candidates_without_host() -> None:
 
 def test_unifi_discovery_reads_nested_host_containers() -> None:
     """Nested address containers should provide a usable discovery host."""
-    discovery_module = _load_discovery_module()
 
     result = discovery_module.discovered_unas_devices_from_scan(
         [
@@ -383,7 +262,6 @@ def test_unifi_discovery_reads_nested_host_containers() -> None:
 
 def test_unifi_discovery_dedupes_normalized_hosts_and_macs() -> None:
     """UniFi discovery should collapse equivalent host and MAC forms."""
-    discovery_module = _load_discovery_module()
 
     devices = [
         types.SimpleNamespace(
@@ -424,7 +302,6 @@ def test_unifi_discovery_dedupes_normalized_hosts_and_macs() -> None:
 
 def test_zeroconf_discovery_uses_wol_switch_state_as_default() -> None:
     """Zeroconf metadata should prefill WOL only when the device reports it."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS Pro._https._tcp.local.",
         hostname="unas-pro.local.",
@@ -457,7 +334,6 @@ def test_zeroconf_discovery_uses_wol_switch_state_as_default() -> None:
 
 def test_zeroconf_smb_discovery_uses_api_port_default() -> None:
     """SMB zeroconf should discover UNAS without using the SMB port as API port."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._smb._tcp.local.",
         hostname="UNAS.local.",
@@ -486,7 +362,6 @@ def test_zeroconf_smb_discovery_uses_api_port_default() -> None:
 
 def test_zeroconf_discovery_tracks_conflicting_mac_sources() -> None:
     """Zeroconf diagnostics should surface conflicting identity hints."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._smb._tcp.local.",
         hostname="UNAS.local.",
@@ -508,7 +383,6 @@ def test_zeroconf_discovery_tracks_conflicting_mac_sources() -> None:
 
 def test_zeroconf_discovery_prefers_hostname_for_service_instance_host() -> None:
     """Service-instance hostnames should prefer a real hostname or IP."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._smb._tcp.local.",
         hostname="unas-pro.local.",
@@ -529,7 +403,6 @@ def test_zeroconf_discovery_prefers_hostname_for_service_instance_host() -> None
 
 def test_zeroconf_discovery_uses_ip_when_hostname_is_missing() -> None:
     """Service-instance only hosts should still map to a stable network host."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._smb._tcp.local.",
         host="UNAS._smb._tcp.local.",
@@ -549,7 +422,6 @@ def test_zeroconf_discovery_uses_ip_when_hostname_is_missing() -> None:
 
 def test_zeroconf_discovery_uses_ip_addresses_when_no_hostname_or_ip() -> None:
     """Zeroconf should fall back to Home Assistant ip_addresses metadata."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._smb._tcp.local.",
         host="UNAS._smb._tcp.local.",
@@ -567,7 +439,6 @@ def test_zeroconf_discovery_uses_ip_addresses_when_no_hostname_or_ip() -> None:
 
 def test_zeroconf_discovery_normalizes_instance_hostnames() -> None:
     """Service-instance hostnames should normalize into usable local names."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._https._tcp.local.",
         host="unas.local._https._tcp.local.",
@@ -583,7 +454,6 @@ def test_zeroconf_discovery_normalizes_instance_hostnames() -> None:
 
 def test_zeroconf_discovery_uses_default_port_for_invalid_api_ports() -> None:
     """Malformed zeroconf ports must not become connection defaults."""
-    discovery_module = _load_discovery_module()
     invalid_text = types.SimpleNamespace(
         name="UNAS._https._tcp.local.",
         host="unas.local",
@@ -610,7 +480,6 @@ def test_zeroconf_discovery_uses_default_port_for_invalid_api_ports() -> None:
 
 def test_zeroconf_discovery_tracks_invalid_advertised_mac() -> None:
     """Invalid advertised MAC values should be reported as identity conflicts."""
-    discovery_module = _load_discovery_module()
     info = types.SimpleNamespace(
         name="UNAS._https._tcp.local.",
         host="unas.local",
@@ -628,7 +497,6 @@ def test_zeroconf_discovery_tracks_invalid_advertised_mac() -> None:
 
 def test_zeroconf_private_helpers_tolerate_sparse_metadata() -> None:
     """Sparse zeroconf shapes should normalize without leaking exceptions."""
-    discovery_module = _load_discovery_module()
 
     assert discovery_module._zeroconf_addresses(
         types.SimpleNamespace(addresses="192.0.2.40")
@@ -651,7 +519,6 @@ def test_zeroconf_private_helpers_tolerate_sparse_metadata() -> None:
 
 def test_system_payload_wol_switch_state_becomes_feature_default() -> None:
     """Validated system metadata should drive the WOL option default."""
-    discovery_module = _load_discovery_module()
     payload = {
         "hardware": {
             "macAddress": "AA:BB:CC:DD:EE:FE",
@@ -669,7 +536,6 @@ def test_system_payload_wol_switch_state_becomes_feature_default() -> None:
 
 def test_system_payload_reads_nested_browser_wol_switch() -> None:
     """Nested UniFi OS WOL settings should also drive the option default."""
-    discovery_module = _load_discovery_module()
     payload = {
         "hardware": {
             "macAddress": "AA:BB:CC:DD:EE:FD",
@@ -689,7 +555,6 @@ def test_system_payload_reads_nested_browser_wol_switch() -> None:
 
 def test_system_payload_reads_unifi_os_device_list_wol_defaults() -> None:
     """System metadata should read WOL defaults from UniFi OS device records."""
-    discovery_module = _load_discovery_module()
     payload = {
         "devices": {
             "unifiOS": [
@@ -1404,7 +1269,6 @@ def test_zeroconf_discovery_unique_id_falls_back_to_host() -> None:
 
 def test_discovery_host_key_normalizes_ipv6_literals() -> None:
     """IPv6 forms should dedupe when zeroconf supplies equivalent literals."""
-    discovery_module = _load_discovery_module()
 
     assert discovery_module.discovery_host_key("[2001:0db8::0001]") == (
         "2001:db8::1"

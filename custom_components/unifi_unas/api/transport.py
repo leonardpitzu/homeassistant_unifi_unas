@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from aiohttp import ClientConnectorError, ClientError, ClientResponse, ClientSession
 
-from .api_errors import CannotConnect, InvalidAuth, UnexpectedResponse
-from .security import safe_error_text
+from ..security import safe_error_text
+from .errors import CannotConnect, InvalidAuth, UnexpectedResponse
 
 _T = TypeVar("_T")
 

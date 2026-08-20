@@ -14,7 +14,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import UnifiUnasApiClient
-from .api_errors import (
+from .api.errors import (
     CannotConnect,
     InvalidAuth,
     UnexpectedResponse,
@@ -33,19 +33,19 @@ from .const import (
 from .entry_options import entry_bool, entry_int
 from .entry_reload import EntryReloadSignature
 from .security import safe_error_text
-from .snapshot_inventory import (
+from .snapshot.inventory import (
     SNAPSHOT_INVENTORY_REASON_CONNECTION,
     SNAPSHOT_INVENTORY_REASON_PERMISSION,
     SNAPSHOT_INVENTORY_REASON_UNEXPECTED_RESPONSE,
     SNAPSHOT_INVENTORY_REASON_UNKNOWN,
     SNAPSHOT_INVENTORY_REASON_UNSUPPORTED,
 )
-from .snapshot_repairs import (
+from .snapshot.repairs import (
     async_clear_snapshot_issues,
     async_create_snapshot_read_issue,
     async_update_snapshot_read_issue,
 )
-from .snapshot_types import snapshot_target_key, snapshot_target_type
+from .snapshot.types import snapshot_target_key, snapshot_target_type
 
 if TYPE_CHECKING:
     from .runtime import UnifiDriveConfigEntry

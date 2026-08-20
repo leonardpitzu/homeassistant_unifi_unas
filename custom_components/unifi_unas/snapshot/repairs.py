@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 
-from .api_errors import InvalidAuth
-from .const import DOMAIN
-from .security import safe_error_text
-from .snapshot_types import normalize_snapshot_target_type, snapshot_target_slug
+from ..api.errors import InvalidAuth
+from ..const import DOMAIN
+from ..security import safe_error_text
+from .types import normalize_snapshot_target_type, snapshot_target_slug
 
 if TYPE_CHECKING:
-    from .runtime import UnifiDriveConfigEntry
+    from ..runtime import UnifiDriveConfigEntry
 
 _SNAPSHOT_ISSUE_KINDS = ("permission", "unavailable")
 _SNAPSHOT_TARGET_TYPES = ("shared", "mydrive")

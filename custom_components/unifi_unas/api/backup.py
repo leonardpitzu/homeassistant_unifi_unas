@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .api_errors import InvalidAuth, UnexpectedResponse, UnsupportedFeature
-from .security import safe_error_text
+from ..security import safe_error_text
+from .errors import InvalidAuth, UnexpectedResponse, UnsupportedFeature
 
 _LOGGER = logging.getLogger(__name__)
 

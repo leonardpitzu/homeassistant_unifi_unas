@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .api_backup import BACKUP_NOT_FOUND_HTTP_STATUSES
-from .api_errors import InvalidAuth, UnsupportedFeature
-from .const import DRIVE_APPLICATION_UPDATE_PATH, UNIFI_OS_UPDATE_PATH
-from .security import safe_error_text
+from ..const import DRIVE_APPLICATION_UPDATE_PATH, UNIFI_OS_UPDATE_PATH
+from ..security import safe_error_text
+from .backup import BACKUP_NOT_FOUND_HTTP_STATUSES
+from .errors import InvalidAuth, UnsupportedFeature
 
 _LOGGER = logging.getLogger(__name__)
 

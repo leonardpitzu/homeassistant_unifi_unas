@@ -1,10 +1,9 @@
-"""Pytest collection cleanup for lightweight module-stub tests."""
+"""Pytest collection setup for the UniFi Drive test suite."""
 
 from __future__ import annotations
 
 import sys
 from importlib.util import find_spec
-from types import ModuleType
 
 import pytest
 
@@ -15,33 +14,10 @@ HA_BACKED_TEST_FILES = {
     "test_snapshot_control_entity_states.py",
 }
 
-_MISSING = object()
-_MODULE_ROOTS_TO_RESTORE = (
-    "aiohttp",
-    "custom_components",
-    "homeassistant",
-    "voluptuous",
-)
-_ORIGINAL_MODULES = {
-    name: module
-    for name, module in sys.modules.items()
-    if any(
-        name == root or name.startswith(f"{root}.")
-        for root in _MODULE_ROOTS_TO_RESTORE
-    )
-}
-
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Remove collection-time stubs before pytest-homeassistant fixtures run.
-
-    Several helper tests import integration modules with tiny Home Assistant
-    stubs at module import time. Those direct module references remain valid for
-    the helper tests, but leaving the stubs in ``sys.modules`` breaks the real
-    Home Assistant pytest plugin and the integration setup tests.
-    """
+    """Prepare the Home Assistant pytest plugin before tests run."""
     _skip_ha_backed_tests_without_plugin(items)
-    _remove_collection_stubs()
     _prime_homeassistant_plugin_modules()
 
 
@@ -56,43 +32,6 @@ def _skip_ha_backed_tests_without_plugin(items: list[pytest.Item]) -> None:
     for item in items:
         if item.path.name in HA_BACKED_TEST_FILES:
             item.add_marker(skip)
-
-
-def _remove_collection_stubs() -> None:
-    """Clear stub modules that were installed only to import pure helpers."""
-    if find_spec("pytest_homeassistant_custom_component") is None:
-        return
-
-    for name, module in list(sys.modules.items()):
-        if _is_collection_stub(name, module):
-            _restore_original_module(name)
-
-
-def _is_collection_stub(name: str, module: ModuleType) -> bool:
-    """Return whether a module is one of the local import-time stubs."""
-    if name == "custom_components":
-        return _has_no_file(module)
-    if name.startswith("custom_components.unifi_unas"):
-        return True
-    if name in {"aiohttp", "voluptuous"}:
-        return _has_no_file(module)
-    if name == "homeassistant" or name.startswith("homeassistant."):
-        return _has_no_file(module)
-    return False
-
-
-def _has_no_file(module: ModuleType) -> bool:
-    """Return whether a module looks like a hand-built ModuleType stub."""
-    return getattr(module, "__file__", None) is None
-
-
-def _restore_original_module(name: str) -> None:
-    """Restore the module object that existed before test collection."""
-    original = _ORIGINAL_MODULES.get(name, _MISSING)
-    if original is _MISSING:
-        sys.modules.pop(name, None)
-    else:
-        sys.modules[name] = original
 
 
 def _prime_homeassistant_plugin_modules() -> None:

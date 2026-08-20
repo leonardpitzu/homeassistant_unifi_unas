@@ -2,100 +2,11 @@
 
 import asyncio
 import json
-import sys
-import types
-from enum import StrEnum
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
+from homeassistant.components.diagnostics import REDACTED
 
-def _redact_data(value, keys):
-    if isinstance(value, dict):
-        return {
-            key: "REDACTED" if key in keys else _redact_data(child, keys)
-            for key, child in value.items()
-        }
-    if isinstance(value, list):
-        return [_redact_data(item, keys) for item in value]
-    return value
-
-
-def _load_diagnostics_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    drive_pkg = types.ModuleType("custom_components.unifi_unas")
-    drive_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = drive_pkg
-
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    components_pkg = types.ModuleType("homeassistant.components")
-    sys.modules["homeassistant.components"] = components_pkg
-
-    diagnostics_pkg = types.ModuleType("homeassistant.components.diagnostics")
-    diagnostics_pkg.async_redact_data = _redact_data
-    sys.modules["homeassistant.components.diagnostics"] = diagnostics_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = object
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    const_pkg = types.ModuleType("homeassistant.const")
-    const_pkg.CONF_API_KEY = "api_key"
-    const_pkg.CONF_HOST = "host"
-    const_pkg.CONF_PASSWORD = "password"
-    const_pkg.CONF_USERNAME = "username"
-
-    class Platform(StrEnum):
-        BINARY_SENSOR = "binary_sensor"
-        BUTTON = "button"
-        NUMBER = "number"
-        SELECT = "select"
-        SENSOR = "sensor"
-        SWITCH = "switch"
-        TIME = "time"
-        UPDATE = "update"
-
-    const_pkg.Platform = Platform
-    sys.modules["homeassistant.const"] = const_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    coordinator_pkg = types.ModuleType("custom_components.unifi_unas.coordinator")
-    coordinator_pkg.UnifiUnasCoordinator = object
-    sys.modules["custom_components.unifi_unas.coordinator"] = coordinator_pkg
-
-    const_spec = spec_from_file_location(
-        "custom_components.unifi_unas.const",
-        package_root / "const.py",
-    )
-    if const_spec is None or const_spec.loader is None:
-        raise RuntimeError("Could not load const module spec")
-    const_module = module_from_spec(const_spec)
-    sys.modules["custom_components.unifi_unas.const"] = const_module
-    const_spec.loader.exec_module(const_module)
-
-    diagnostics_spec = spec_from_file_location(
-        "custom_components.unifi_unas.diagnostics",
-        package_root / "diagnostics.py",
-    )
-    if diagnostics_spec is None or diagnostics_spec.loader is None:
-        raise RuntimeError("Could not load diagnostics module spec")
-    diagnostics_module = module_from_spec(diagnostics_spec)
-    sys.modules["custom_components.unifi_unas.diagnostics"] = diagnostics_module
-    diagnostics_spec.loader.exec_module(diagnostics_module)
-    return diagnostics_module
-
-
-diagnostics_module = _load_diagnostics_module()
+from custom_components.unifi_unas import diagnostics as diagnostics_module
 
 
 def _manifest_version() -> str:
@@ -238,23 +149,23 @@ def test_diagnostics_redacts_credentials_and_sensitive_entry_fields() -> None:
     )
 
     entry_data = result["config_entry"]["data"]
-    assert entry_data["host"] == "REDACTED"
-    assert entry_data["username"] == "REDACTED"
-    assert entry_data["password"] == "REDACTED"
-    assert entry_data["api_key"] == "REDACTED"
-    assert entry_data["discovery_mac_address"] == "REDACTED"
-    assert entry_data["discovery_host_aliases"] == "REDACTED"
-    assert entry_data["wol_mac_address"] == "REDACTED"
-    assert entry_data["wol_broadcast_address"] == "REDACTED"
-    assert entry_data["authorization"] == "REDACTED"
-    assert entry_data["access_token"] == "REDACTED"
-    assert entry_data["cookie"] == "REDACTED"
-    assert entry_data["session"] == "REDACTED"
-    assert entry_data["nested"]["serialNumber"] == "REDACTED"
+    assert entry_data["host"] == REDACTED
+    assert entry_data["username"] == REDACTED
+    assert entry_data["password"] == REDACTED
+    assert entry_data["api_key"] == REDACTED
+    assert entry_data["discovery_mac_address"] == REDACTED
+    assert entry_data["discovery_host_aliases"] == REDACTED
+    assert entry_data["wol_mac_address"] == REDACTED
+    assert entry_data["wol_broadcast_address"] == REDACTED
+    assert entry_data["authorization"] == REDACTED
+    assert entry_data["access_token"] == REDACTED
+    assert entry_data["cookie"] == REDACTED
+    assert entry_data["session"] == REDACTED
+    assert entry_data["nested"]["serialNumber"] == REDACTED
     entry_options = result["config_entry"]["options"]
     assert entry_options["discovery_debug"] is True
-    assert entry_options["wol_mac_address"] == "REDACTED"
-    assert entry_options["wol_broadcast_address"] == "REDACTED"
+    assert entry_options["wol_mac_address"] == REDACTED
+    assert entry_options["wol_broadcast_address"] == REDACTED
     assert entry_options["scan_interval"] == 120
 
 

@@ -3,18 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from importlib import import_module
 
-from tests.module_stubs import load_api_module
-
-
-def _load_api_client_class():
-    api_module = load_api_module()
-    api_errors = import_module("custom_components.unifi_unas.api_errors")
-    return api_module.UnifiUnasApiClient, api_errors.UnsupportedFeature
-
-
-UnifiUnasApiClient, UnsupportedFeature = _load_api_client_class()
+from custom_components.unifi_unas.api import UnifiUnasApiClient
+from custom_components.unifi_unas.api.errors import UnsupportedFeature
 
 
 def _run_update_once(status: int):

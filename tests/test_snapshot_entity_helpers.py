@@ -3,166 +3,18 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 import types
-from enum import StrEnum
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
+
+from custom_components.unifi_unas import switch as switch_module
+from custom_components.unifi_unas.snapshot import entities as snapshot_entities_module
+from custom_components.unifi_unas.snapshot import types as snapshot_types_module
 
 
-def _load_snapshot_entities_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
+class _FakeCoordinator:
+    """Coordinator double; must be weak-referenceable like the real one."""
 
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    drive_pkg = types.ModuleType("custom_components.unifi_unas")
-    drive_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = drive_pkg
-
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = object
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    const_pkg = types.ModuleType("homeassistant.const")
-
-    class EntityCategory(StrEnum):
-        CONFIG = "config"
-
-    class Platform(StrEnum):
-        BINARY_SENSOR = "binary_sensor"
-        BUTTON = "button"
-        NUMBER = "number"
-        SELECT = "select"
-        SENSOR = "sensor"
-        SWITCH = "switch"
-        TIME = "time"
-        UPDATE = "update"
-
-    const_pkg.EntityCategory = EntityCategory
-    const_pkg.Platform = Platform
-    sys.modules["homeassistant.const"] = const_pkg
-
-    exceptions_pkg = types.ModuleType("homeassistant.exceptions")
-
-    class HomeAssistantError(Exception):
-        """Base Home Assistant error stub."""
-
-    class ServiceValidationError(HomeAssistantError):
-        """Service validation error stub."""
-
-    exceptions_pkg.HomeAssistantError = HomeAssistantError
-    exceptions_pkg.ServiceValidationError = ServiceValidationError
-    sys.modules["homeassistant.exceptions"] = exceptions_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    issue_registry_pkg = types.ModuleType("homeassistant.helpers.issue_registry")
-    issue_registry_pkg.IssueSeverity = types.SimpleNamespace(WARNING="warning")
-    issue_registry_pkg.async_create_issue = lambda *args, **kwargs: None
-    issue_registry_pkg.async_delete_issue = lambda *args, **kwargs: None
-    sys.modules["homeassistant.helpers.issue_registry"] = issue_registry_pkg
-
-    entity_platform_pkg = types.ModuleType("homeassistant.helpers.entity_platform")
-    entity_platform_pkg.AddEntitiesCallback = object
-    sys.modules["homeassistant.helpers.entity_platform"] = entity_platform_pkg
-
-    update_coordinator_pkg = types.ModuleType("homeassistant.helpers.update_coordinator")
-
-    class CoordinatorEntity:
-        @classmethod
-        def __class_getitem__(cls, item):
-            return cls
-
-        def __init__(self, coordinator) -> None:
-            self.coordinator = coordinator
-
-        @property
-        def available(self) -> bool:
-            return True
-
-    update_coordinator_pkg.CoordinatorEntity = CoordinatorEntity
-    sys.modules["homeassistant.helpers.update_coordinator"] = update_coordinator_pkg
-
-    api_pkg = types.ModuleType("custom_components.unifi_unas.api")
-    api_pkg.CannotConnect = Exception
-    api_pkg.InvalidAuth = Exception
-    api_pkg.UnexpectedResponse = Exception
-    api_pkg.UnsupportedFeature = Exception
-    sys.modules["custom_components.unifi_unas.api"] = api_pkg
-
-    coordinator_pkg = types.ModuleType("custom_components.unifi_unas.coordinator")
-    coordinator_pkg.UnifiUnasCoordinator = object
-    sys.modules["custom_components.unifi_unas.coordinator"] = coordinator_pkg
-
-    device_pkg = types.ModuleType("custom_components.unifi_unas.device")
-    device_pkg.build_device_info = lambda *args, **kwargs: {}
-    sys.modules["custom_components.unifi_unas.device"] = device_pkg
-
-    snapshot_spec = spec_from_file_location(
-        "custom_components.unifi_unas.snapshot_entities",
-        package_root / "snapshot_entities.py",
-    )
-    if snapshot_spec is None or snapshot_spec.loader is None:
-        raise RuntimeError("Could not load snapshot_entities module spec")
-    snapshot_module = module_from_spec(snapshot_spec)
-    sys.modules["custom_components.unifi_unas.snapshot_entities"] = snapshot_module
-    snapshot_spec.loader.exec_module(snapshot_module)
-    return snapshot_module
-
-
-snapshot_entities_module = _load_snapshot_entities_module()
-snapshot_types_module = sys.modules["custom_components.unifi_unas.snapshot_types"]
-
-
-def _load_switch_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-
-    components_pkg = types.ModuleType("homeassistant.components")
-    sys.modules["homeassistant.components"] = components_pkg
-
-    switch_pkg = types.ModuleType("homeassistant.components.switch")
-
-    class SwitchEntity:
-        """Switch entity stub."""
-
-    switch_pkg.SwitchEntity = SwitchEntity
-    sys.modules["homeassistant.components.switch"] = switch_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = object
-    sys.modules["homeassistant.core"] = core_pkg
-
-    const_pkg = types.ModuleType("custom_components.unifi_unas.const")
-    const_pkg.CONF_SNAPSHOT_BUTTONS_ENABLED = "snapshot_buttons_enabled"
-    const_pkg.DEFAULT_SNAPSHOT_BUTTONS_ENABLED = True
-    const_pkg.DOMAIN = "unifi_unas"
-    sys.modules["custom_components.unifi_unas.const"] = const_pkg
-
-    switch_spec = spec_from_file_location(
-        "custom_components.unifi_unas.switch",
-        package_root / "switch.py",
-    )
-    if switch_spec is None or switch_spec.loader is None:
-        raise RuntimeError("Could not load switch module spec")
-    switch_module = module_from_spec(switch_spec)
-    sys.modules["custom_components.unifi_unas.switch"] = switch_module
-    switch_spec.loader.exec_module(switch_module)
-    return switch_module
-
-
-switch_module = _load_switch_module()
+    def __init__(self, **attributes: object) -> None:
+        self.__dict__.update(attributes)
 
 
 class _FakeEntry:
@@ -178,7 +30,7 @@ def test_async_track_snapshot_target_entities_adds_new_targets_once() -> None:
     """Dynamic snapshot entity factories should run once per stable target."""
     added: list[str] = []
     listeners = []
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         snapshot_settings=[{"type": "shared", "id": "shared-1"}],
         async_add_listener=lambda listener: listeners.append(listener),
     )
@@ -203,7 +55,7 @@ def test_async_track_snapshot_target_entities_adds_new_targets_once() -> None:
 
 def test_snapshot_target_entity_registry_is_cleared_on_unload() -> None:
     """Unloading snapshot targets should clear cached entity buckets immediately."""
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         snapshot_settings=[{"type": "shared", "id": "shared-1"}],
         async_add_listener=lambda listener: None,
     )
@@ -221,11 +73,10 @@ def test_snapshot_target_entity_registry_is_cleared_on_unload() -> None:
         icon="mdi:camera-switch",
     )
 
-    coordinator_key = id(coordinator)
-    assert coordinator_key in snapshot_entities_module._SNAPSHOT_TARGET_ENTITIES_BY_ID
+    assert coordinator in snapshot_entities_module._SNAPSHOT_TARGET_ENTITIES
 
     snapshot_entities_module._clear_snapshot_target_entities_for_coordinator(coordinator)
-    assert coordinator_key not in snapshot_entities_module._SNAPSHOT_TARGET_ENTITIES_BY_ID
+    assert coordinator not in snapshot_entities_module._SNAPSHOT_TARGET_ENTITIES
 
 
 def test_snapshot_target_entity_tracks_missing_target_lifecycle() -> None:
@@ -241,7 +92,7 @@ def test_snapshot_target_entity_tracks_missing_target_lifecycle() -> None:
         lambda *args, **kwargs: clear_calls.append(kwargs)
     )
     target = {"type": "shared", "id": "shared-1", "name": "Shared"}
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         hass=object(),
         snapshot_settings=[target],
         async_add_listener=lambda listener: None,
@@ -348,7 +199,7 @@ def test_snapshot_switch_setup_adds_only_enable_switch_per_target() -> None:
         "enabled": True,
     }
     listeners = []
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         is_device_online=True,
         snapshot_settings=[target],
         async_add_listener=lambda listener: listeners.append(listener),
@@ -379,7 +230,7 @@ def test_async_track_snapshot_target_entities_with_missing_snapshot_settings() -
     """Missing snapshot_settings should not break entity tracking."""
     added: list[str] = []
     listeners = []
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         async_add_listener=lambda listener: listeners.append(listener),
     )
 
@@ -403,7 +254,7 @@ def test_async_track_snapshot_target_entities_skips_invalid_targets_for_filter()
     listeners: list = []
     calls: list[dict[str, str]] = []
 
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         snapshot_settings=[
             None,
             123,
@@ -491,9 +342,10 @@ def test_snapshot_entity_blocks_writes_while_offline() -> None:
         "name": "Shared",
         "enabled": True,
     }
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         is_device_online=False,
         snapshot_settings=[target],
+        last_update_success=True,
     )
     entity = snapshot_entities_module.UnifiUnasSnapshotTargetEntity(
         coordinator,
@@ -518,7 +370,7 @@ def test_snapshot_entity_blocks_writes_while_offline() -> None:
 
 def test_snapshot_entity_with_invalid_target_key_has_absent_state() -> None:
     """Entity created from malformed target keeps a safe unavailable state."""
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         is_device_online=True,
         snapshot_settings=[],
     )
@@ -537,7 +389,7 @@ def test_snapshot_entity_with_invalid_target_key_has_absent_state() -> None:
 
 def test_snapshot_entity_current_target_skips_invalid_snapshot_settings_entries() -> None:
     """Current-target lookup should ignore malformed entries and still find valid ones."""
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeCoordinator(
         is_device_online=True,
         snapshot_settings=[
             None,

@@ -1,191 +1,27 @@
 """Unit tests for sensor helper mapping logic."""
 
 import asyncio
-import sys
-import types
-from dataclasses import dataclass
-from enum import StrEnum
 from importlib import import_module
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 
-
-def _load_sensor_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-    sensor_path = package_root / "sensor.py"
-
-    custom_components_pkg = types.ModuleType("custom_components")
-    custom_components_pkg.__path__ = [str(root / "custom_components")]
-    sys.modules.setdefault("custom_components", custom_components_pkg)
-
-    drive_pkg = types.ModuleType("custom_components.unifi_unas")
-    drive_pkg.__path__ = [str(package_root)]
-    sys.modules["custom_components.unifi_unas"] = drive_pkg
-
-    ha_pkg = types.ModuleType("homeassistant")
-    sys.modules["homeassistant"] = ha_pkg
-
-    components_pkg = types.ModuleType("homeassistant.components")
-    sys.modules["homeassistant.components"] = components_pkg
-
-    sensor_pkg = types.ModuleType("homeassistant.components.sensor")
-
-    @dataclass(frozen=True, kw_only=True)
-    class SensorEntityDescription:
-        key: str
-        name: str | None = None
-        translation_key: str | None = None
-        icon: str | None = None
-        device_class: str | None = None
-        native_unit_of_measurement: str | None = None
-        state_class: str | None = None
-        suggested_display_precision: int | None = None
-        entity_category: str | None = None
-        entity_registry_enabled_default: bool = True
-
-    class SensorEntity:
-        pass
-
-    class SensorDeviceClass:
-        DATA_SIZE = "data_size"
-        TEMPERATURE = "temperature"
-
-    class SensorStateClass:
-        MEASUREMENT = "measurement"
-
-    sensor_pkg.SensorDeviceClass = SensorDeviceClass
-    sensor_pkg.SensorEntity = SensorEntity
-    sensor_pkg.SensorEntityDescription = SensorEntityDescription
-    sensor_pkg.SensorStateClass = SensorStateClass
-    sys.modules["homeassistant.components.sensor"] = sensor_pkg
-
-    config_entries_pkg = types.ModuleType("homeassistant.config_entries")
-    config_entries_pkg.ConfigEntry = type("ConfigEntry", (), {})
-    sys.modules["homeassistant.config_entries"] = config_entries_pkg
-
-    const_pkg = types.ModuleType("homeassistant.const")
-    const_pkg.PERCENTAGE = "%"
-
-    class Platform(StrEnum):
-        BINARY_SENSOR = "binary_sensor"
-        BUTTON = "button"
-        NUMBER = "number"
-        SELECT = "select"
-        SENSOR = "sensor"
-        SWITCH = "switch"
-        TIME = "time"
-        UPDATE = "update"
-
-    class EntityCategory:
-        DIAGNOSTIC = "diagnostic"
-        CONFIG = "config"
-
-    const_pkg.EntityCategory = EntityCategory
-    class UnitOfInformation:
-        GIBIBYTES = "GiB"
-
-    class UnitOfTemperature:
-        CELSIUS = "C"
-
-    const_pkg.Platform = Platform
-    const_pkg.UnitOfInformation = UnitOfInformation
-    const_pkg.UnitOfTemperature = UnitOfTemperature
-    sys.modules["homeassistant.const"] = const_pkg
-
-    core_pkg = types.ModuleType("homeassistant.core")
-    core_pkg.HomeAssistant = type("HomeAssistant", (), {})
-    sys.modules["homeassistant.core"] = core_pkg
-
-    helpers_pkg = types.ModuleType("homeassistant.helpers")
-    sys.modules["homeassistant.helpers"] = helpers_pkg
-
-    exceptions_pkg = types.ModuleType("homeassistant.exceptions")
-    exceptions_pkg.HomeAssistantError = Exception
-    exceptions_pkg.ServiceValidationError = Exception
-    sys.modules["homeassistant.exceptions"] = exceptions_pkg
-
-    device_registry_pkg = types.ModuleType("homeassistant.helpers.device_registry")
-    device_registry_pkg.DeviceInfo = dict
-    sys.modules["homeassistant.helpers.device_registry"] = device_registry_pkg
-
-    issue_registry_pkg = types.ModuleType("homeassistant.helpers.issue_registry")
-    issue_registry_pkg.IssueSeverity = types.SimpleNamespace(WARNING="warning")
-    issue_registry_pkg.async_create_issue = lambda *args, **kwargs: None
-    issue_registry_pkg.async_delete_issue = lambda *args, **kwargs: None
-    sys.modules["homeassistant.helpers.issue_registry"] = issue_registry_pkg
-
-    entity_platform_pkg = types.ModuleType("homeassistant.helpers.entity_platform")
-    entity_platform_pkg.AddEntitiesCallback = object
-    sys.modules["homeassistant.helpers.entity_platform"] = entity_platform_pkg
-
-    typing_pkg = types.ModuleType("homeassistant.helpers.typing")
-    typing_pkg.StateType = object
-    sys.modules["homeassistant.helpers.typing"] = typing_pkg
-
-    update_coordinator_pkg = types.ModuleType("homeassistant.helpers.update_coordinator")
-
-    class CoordinatorEntity:
-        @classmethod
-        def __class_getitem__(cls, item):
-            return cls
-
-        def __init__(self, coordinator) -> None:
-            self.coordinator = coordinator
-
-        @property
-        def available(self) -> bool:
-            return True
-
-    update_coordinator_pkg.CoordinatorEntity = CoordinatorEntity
-    sys.modules["homeassistant.helpers.update_coordinator"] = update_coordinator_pkg
-
-    coordinator_pkg = types.ModuleType("custom_components.unifi_unas.coordinator")
-    coordinator_pkg.UnifiUnasCoordinator = type("UnifiUnasCoordinator", (), {})
-    sys.modules["custom_components.unifi_unas.coordinator"] = coordinator_pkg
-
-    api_pkg = types.ModuleType("custom_components.unifi_unas.api")
-    api_pkg.CannotConnect = Exception
-    api_pkg.InvalidAuth = Exception
-    api_pkg.UnexpectedResponse = Exception
-    api_pkg.UnsupportedFeature = Exception
-    sys.modules["custom_components.unifi_unas.api"] = api_pkg
-
-    const_path = package_root / "const.py"
-    const_spec = spec_from_file_location("custom_components.unifi_unas.const", const_path)
-    if const_spec is None or const_spec.loader is None:
-        raise RuntimeError("Could not load const module spec")
-    const_module = module_from_spec(const_spec)
-    sys.modules["custom_components.unifi_unas.const"] = const_module
-    const_spec.loader.exec_module(const_module)
-
-    sensor_spec = spec_from_file_location(
-        "custom_components.unifi_unas.sensor",
-        sensor_path,
-    )
-    if sensor_spec is None or sensor_spec.loader is None:
-        raise RuntimeError("Could not load sensor module spec")
-    sensor_module = module_from_spec(sensor_spec)
-    sys.modules["custom_components.unifi_unas.sensor"] = sensor_module
-    sensor_spec.loader.exec_module(sensor_module)
-    _attach_storage_helpers(sensor_module)
-    return sensor_module
+from custom_components.unifi_unas import binary_sensor as binary_sensor_module
+from custom_components.unifi_unas import sensor as sensor_module
+from custom_components.unifi_unas import update as update_module
 
 
 def _attach_storage_helpers(sensor_module) -> None:
     """Expose every storage helper as `sensor_module.<helper>`.
 
-    The helpers live in the `storage_*` module that owns the data. Flattening
-    them here keeps that a test convenience instead of an extra re-export layer
-    in the integration.
+    The helpers live in the `storage` subpackage module that owns the data.
+    Flattening them here keeps that a test convenience instead of an extra
+    re-export layer in the integration.
     """
     for module_name in (
-        "storage_capacity",
-        "storage_common",
-        "storage_drives",
-        "storage_pools",
-        "storage_system",
-        "storage_throughput",
+        "storage.capacity",
+        "storage.common",
+        "storage.drives",
+        "storage.pools",
+        "storage.system",
+        "storage.throughput",
         "system_metadata",
     ):
         module = import_module(f"custom_components.unifi_unas.{module_name}")
@@ -194,108 +30,14 @@ def _attach_storage_helpers(sensor_module) -> None:
                 setattr(sensor_module, name, value)
 
 
-sensor_module = _load_sensor_module()
+_attach_storage_helpers(sensor_module)
 
 
-def _load_binary_sensor_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-    binary_sensor_path = package_root / "binary_sensor.py"
+class _FakeSnapshotCoordinator:
+    """Coordinator double; must be weak-referenceable like the real one."""
 
-    binary_sensor_pkg = types.ModuleType("homeassistant.components.binary_sensor")
-
-    @dataclass(frozen=True, kw_only=True)
-    class BinarySensorEntityDescription:
-        key: str
-        name: str | None = None
-        translation_key: str | None = None
-        device_class: str | None = None
-        entity_category: str | None = None
-        entity_registry_enabled_default: bool = True
-
-    class BinarySensorEntity:
-        pass
-
-    class BinarySensorDeviceClass:
-        CONNECTIVITY = "connectivity"
-        PROBLEM = "problem"
-
-    binary_sensor_pkg.BinarySensorDeviceClass = BinarySensorDeviceClass
-    binary_sensor_pkg.BinarySensorEntity = BinarySensorEntity
-    binary_sensor_pkg.BinarySensorEntityDescription = BinarySensorEntityDescription
-    sys.modules["homeassistant.components.binary_sensor"] = binary_sensor_pkg
-
-    binary_sensor_spec = spec_from_file_location(
-        "custom_components.unifi_unas.binary_sensor",
-        binary_sensor_path,
-    )
-    if binary_sensor_spec is None or binary_sensor_spec.loader is None:
-        raise RuntimeError("Could not load binary_sensor module spec")
-    binary_sensor_module = module_from_spec(binary_sensor_spec)
-    sys.modules["custom_components.unifi_unas.binary_sensor"] = binary_sensor_module
-    binary_sensor_spec.loader.exec_module(binary_sensor_module)
-    return binary_sensor_module
-
-
-binary_sensor_module = _load_binary_sensor_module()
-
-
-def _load_update_module():
-    root = Path(__file__).resolve().parents[1]
-    package_root = root / "custom_components" / "unifi_unas"
-    update_path = package_root / "update.py"
-
-    update_pkg = types.ModuleType("homeassistant.components.update")
-
-    @dataclass(frozen=True, kw_only=True)
-    class UpdateEntityDescription:
-        key: str
-        name: str | None = None
-        translation_key: str | None = None
-        icon: str | None = None
-        device_class: str | None = None
-        entity_category: str | None = None
-
-    class UpdateEntity:
-        pass
-
-    class UpdateDeviceClass:
-        FIRMWARE = "firmware"
-
-    class UpdateEntityFeature:
-        INSTALL = 1
-
-    update_pkg.UpdateDeviceClass = UpdateDeviceClass
-    update_pkg.UpdateEntity = UpdateEntity
-    update_pkg.UpdateEntityDescription = UpdateEntityDescription
-    update_pkg.UpdateEntityFeature = UpdateEntityFeature
-    sys.modules["homeassistant.components.update"] = update_pkg
-
-    exceptions_pkg = types.ModuleType("homeassistant.exceptions")
-    exceptions_pkg.HomeAssistantError = Exception
-    sys.modules["homeassistant.exceptions"] = exceptions_pkg
-
-    api_pkg = types.ModuleType("custom_components.unifi_unas.api")
-    api_pkg.CannotConnect = Exception
-    api_pkg.InvalidAuth = Exception
-    api_pkg.UnexpectedResponse = Exception
-    api_pkg.UnsupportedFeature = Exception
-    api_pkg.UnifiUnasApiClient = type("UnifiUnasApiClient", (), {})
-    sys.modules["custom_components.unifi_unas.api"] = api_pkg
-
-    update_spec = spec_from_file_location(
-        "custom_components.unifi_unas.update",
-        update_path,
-    )
-    if update_spec is None or update_spec.loader is None:
-        raise RuntimeError("Could not load update module spec")
-    update_module = module_from_spec(update_spec)
-    sys.modules["custom_components.unifi_unas.update"] = update_module
-    update_spec.loader.exec_module(update_module)
-    return update_module
-
-
-update_module = _load_update_module()
+    def __init__(self, **attributes: object) -> None:
+        self.__dict__.update(attributes)
 
 
 class _FakeEntry:
@@ -1111,7 +853,7 @@ def test_storage_pool_status_progress_and_aggregates() -> None:
 def test_throughput_parses_nested_units_and_invalid_values() -> None:
     """Throughput helpers should parse dict/list/unit variants defensively."""
     throughput_module = __import__(
-        "custom_components.unifi_unas.storage_throughput",
+        "custom_components.unifi_unas.storage.throughput",
         fromlist=["_throughput_unit_hints"],
     )
     unit_hints = throughput_module._throughput_unit_hints()
@@ -1145,7 +887,7 @@ def test_snapshot_inventory_sensor_exposes_compact_inventory_metadata() -> None:
         "enabled": True,
         "total_count": 1,
     }
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeSnapshotCoordinator(
         is_device_online=True,
         snapshot_settings=[target],
         snapshot_inventory={
@@ -1219,7 +961,7 @@ def test_snapshot_inventory_sensor_falls_back_to_settings_count() -> None:
         "enabled": True,
         "total_count": 3,
     }
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeSnapshotCoordinator(
         is_device_online=True,
         snapshot_settings=[target],
         snapshot_inventory={},
@@ -1249,7 +991,7 @@ def test_snapshot_inventory_sensor_tolerates_malformed_inventory_state() -> None
         "enabled": True,
         "total_count": 4,
     }
-    coordinator = types.SimpleNamespace(
+    coordinator = _FakeSnapshotCoordinator(
         is_device_online=True,
         snapshot_settings=[target],
         snapshot_inventory=["bad"],

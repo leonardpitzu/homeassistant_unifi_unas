@@ -163,7 +163,7 @@ def _snapshot_entity_ids_by_unique_id(hass, config_entry):
 def _snapshot_unique_ids(target: dict[str, Any], device_id: str) -> dict[str, str]:
     """Return expected unique IDs for one snapshot target."""
     _ensure_repo_custom_components_path()
-    from custom_components.unifi_unas.snapshot_types import (
+    from custom_components.unifi_unas.snapshot.types import (
         snapshot_target_key,
         snapshot_target_slug,
     )
@@ -236,7 +236,7 @@ class _SnapshotIntegrationClient:
         target: dict[str, Any],
     ) -> dict[str, Any]:
         """Return static inventory metadata for shared targets."""
-        from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+        from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
         self.inventory_requests.append(snapshot_target_key(target))
         return {"recent_snapshot_count": 0}
@@ -247,7 +247,7 @@ class _SnapshotIntegrationClient:
         **kwargs: Any,
     ) -> None:
         """Mutate the tracked snapshot target and record the settings payload."""
-        from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+        from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
         await self._maybe_fail()
         target_key = snapshot_target_key(target)
@@ -265,7 +265,7 @@ class _SnapshotIntegrationClient:
         **kwargs: Any,
     ) -> None:
         """Record create-snapshot actions."""
-        from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+        from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
         await self._maybe_fail()
         payload = {"target_key": snapshot_target_key(target), **kwargs}
@@ -275,7 +275,7 @@ class _SnapshotIntegrationClient:
 @pytest.mark.asyncio
 async def test_snapshot_control_entities_report_state_in_home_assistant(hass) -> None:
     """Create snapshot entities should expose expected HA state and attributes."""
-    from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+    from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
     target = _snapshot_target_with_controls()
     client = _SnapshotIntegrationClient([target])
@@ -311,7 +311,7 @@ async def test_snapshot_control_entities_report_state_in_home_assistant(hass) ->
 async def test_snapshot_control_services_update_client_and_refresh_states(hass) -> None:
     """Snapshot control services should call API updates and refresh HA states."""
     target = _snapshot_target_with_controls()
-    from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+    from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
     client = _SnapshotIntegrationClient([target])
     entry, entity_ids = await _setup_snapshot_controls(hass, client)
@@ -389,7 +389,7 @@ async def test_snapshot_control_services_update_client_and_refresh_states(hass) 
 @pytest.mark.asyncio
 async def test_snapshot_create_button_reports_api_failures(hass) -> None:
     """Snapshot create failures should surface translatable HA errors."""
-    from custom_components.unifi_unas.api_errors import (
+    from custom_components.unifi_unas.api.errors import (
         CannotConnect,
         InvalidAuth,
         UnsupportedFeature,
@@ -432,7 +432,7 @@ async def test_snapshot_create_button_reports_api_failures(hass) -> None:
 @pytest.mark.asyncio
 async def test_snapshot_setting_controls_report_api_failures(hass) -> None:
     """Snapshot setting writes should surface actionable translated failures."""
-    from custom_components.unifi_unas.api_errors import (
+    from custom_components.unifi_unas.api.errors import (
         CannotConnect,
         InvalidAuth,
         UnsupportedFeature,
@@ -476,7 +476,7 @@ async def test_snapshot_setting_controls_report_api_failures(hass) -> None:
 async def test_snapshot_control_states_refresh_immediately_after_service_update(hass) -> None:
     """Service updates should rewrite snapshot entity states without manual refresh."""
     target = _snapshot_target_with_controls()
-    from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+    from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
     client = _SnapshotIntegrationClient([target])
     entry, entity_ids = await _setup_snapshot_controls(hass, client)
@@ -530,7 +530,7 @@ async def test_snapshot_control_services_target_valid_entry_with_invalid_setting
 ) -> None:
     """Service calls should still update the valid shared target when other entries are invalid."""
     valid_target = _snapshot_target_with_controls()
-    from custom_components.unifi_unas.snapshot_types import snapshot_target_key
+    from custom_components.unifi_unas.snapshot.types import snapshot_target_key
 
     client = _SnapshotIntegrationClient(
         [

@@ -27,7 +27,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import UnifiUnasCoordinator
-from .discovery_identity import (
+from .discovery.identity import (
     discovery_confidence_score,
     discovery_identity_conflicts_for_entry,
     discovery_identity_token,
@@ -37,23 +37,23 @@ from .discovery_identity import (
 )
 from .entry_options import merged_entry_data_options
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry_or_none
-from .snapshot_inventory import snapshot_inventory_error_is_sticky
-from .snapshot_types import snapshot_target_key, snapshot_target_type
-from .storage_capacity import (
+from .snapshot.inventory import snapshot_inventory_error_is_sticky
+from .snapshot.types import snapshot_target_key, snapshot_target_type
+from .storage.capacity import (
     _aggregate_available,
     _aggregate_capacity,
     _aggregate_usage,
 )
-from .storage_drives import _pool_drives
-from .storage_pools import (
+from .storage.drives import _pool_drives
+from .storage.pools import (
     _aggregate_status,
     _at_risk_disk_count,
     _degraded_pool_count,
     _maintenance_pool_count,
     _pools,
 )
-from .storage_system import _system_status
-from .storage_throughput import (
+from .storage.system import _system_status
+from .storage.throughput import (
     _read_throughput_mb_s,
     _write_throughput_mb_s,
 )

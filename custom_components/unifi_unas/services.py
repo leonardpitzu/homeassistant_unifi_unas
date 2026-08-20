@@ -10,7 +10,7 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
-from .api_errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
+from .api.errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
 from .const import (
     ATTR_DESCRIPTION,
     ATTR_ENTRY_ID,
@@ -52,14 +52,14 @@ from .entry_options import entry_bool, entry_int, entry_str
 from .exceptions import unifi_unas_error, unifi_unas_validation_error
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry_or_none
 from .security import safe_error_text
-from .snapshot_repairs import (
+from .snapshot.repairs import (
     async_clear_snapshot_action_issues,
     async_create_snapshot_action_issue,
     async_create_snapshot_read_issue,
     async_update_snapshot_read_issue,
 )
-from .snapshot_schedule import _schedule_time_parts
-from .snapshot_types import (
+from .snapshot.schedule import _schedule_time_parts
+from .snapshot.types import (
     normalize_snapshot_target_type,
     snapshot_target_key,
     snapshot_target_name,

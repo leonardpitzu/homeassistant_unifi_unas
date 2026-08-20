@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import UnifiUnasCoordinator
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
-from .snapshot_entities import (
+from .snapshot.entities import (
     UnifiUnasSnapshotTargetEntity,
     async_setup_snapshot_target_entities,
 )

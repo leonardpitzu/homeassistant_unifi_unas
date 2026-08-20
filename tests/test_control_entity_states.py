@@ -247,7 +247,7 @@ async def test_fan_select_reports_and_updates_home_assistant_state(hass) -> None
 @pytest.mark.asyncio
 async def test_fan_select_reports_action_failures(hass) -> None:
     """Fan select should surface validation, permission and endpoint failures."""
-    from custom_components.unifi_unas.api_errors import InvalidAuth, UnsupportedFeature
+    from custom_components.unifi_unas.api.errors import InvalidAuth, UnsupportedFeature
 
     client = _ControlIntegrationClient()
     entry = await _async_setup_control_entry(hass, client)
@@ -318,7 +318,7 @@ async def test_update_entities_report_home_assistant_state(hass) -> None:
 @pytest.mark.asyncio
 async def test_system_buttons_run_and_report_failures(hass) -> None:
     """System buttons should call clients and translate offline/API failures."""
-    from custom_components.unifi_unas.api_errors import CannotConnect, InvalidAuth
+    from custom_components.unifi_unas.api.errors import CannotConnect, InvalidAuth
     from custom_components.unifi_unas.const import DOMAIN
 
     client = _ControlIntegrationClient()
@@ -501,7 +501,7 @@ async def test_backup_button_reports_and_runs_from_home_assistant_state(hass) ->
 @pytest.mark.asyncio
 async def test_backup_button_reports_offline_and_api_failures(hass) -> None:
     """Backup task button should not turn offline into repairs or silent success."""
-    from custom_components.unifi_unas.api_errors import InvalidAuth, UnsupportedFeature
+    from custom_components.unifi_unas.api.errors import InvalidAuth, UnsupportedFeature
     from custom_components.unifi_unas.const import DOMAIN
 
     client = _ControlIntegrationClient()

@@ -5,7 +5,7 @@ from __future__ import annotations
 from ipaddress import IPv6Address, ip_address
 from typing import Any
 
-from .discovery_identity import discovery_host_key, discovery_mac_key
+from .identity import discovery_host_key, discovery_mac_key
 
 
 def clean_text(value: Any) -> str | None:

@@ -8,8 +8,9 @@ from typing import Any
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, UnitOfInformation, UnitOfTemperature
 
-from .sensor_types import DriveSensorDescription
-from .storage_common import (
+from ..sensor_types import DriveSensorDescription
+from ..system_metadata import normalized_token as _normalized_token
+from .common import (
     DISK_PROBLEM_HINTS,
     _bytes_to_gib,
     _dict_values,
@@ -17,7 +18,6 @@ from .storage_common import (
     _slug,
     _text,
 )
-from .system_metadata import normalized_token as _normalized_token
 
 DRIVE_INDEX_KEY_RE = re.compile(r"(?:^|_)drive_(\d+)$")
 DRIVE_ID_KEYS = (

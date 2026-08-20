@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import UnifiUnasApiClient
-from .api_errors import (
+from .api.errors import (
     CannotConnect,
     InvalidAuth,
     UnexpectedResponse,

@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .const import DEFAULT_SNAPSHOT_LIMIT, MAX_SNAPSHOT_LIMIT, MIN_SNAPSHOT_LIMIT
-from .snapshot_schedule import (
+from ..const import DEFAULT_SNAPSHOT_LIMIT, MAX_SNAPSHOT_LIMIT, MIN_SNAPSHOT_LIMIT
+from .schedule import (
     _snapshot_schedule_api_value,
     _snapshot_schedule_days,
     _snapshot_schedule_first_run_time,
     _snapshot_schedule_monthdays,
     _snapshot_schedule_weekdays,
 )
-from .snapshot_values import _int_value
+from .values import _int_value
 
 
 @dataclass(frozen=True, kw_only=True)

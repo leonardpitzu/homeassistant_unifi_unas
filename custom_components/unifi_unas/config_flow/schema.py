@@ -20,7 +20,7 @@ from homeassistant.const import (
     CONF_VERIFY_SSL,
 )
 
-from .const import (
+from ..const import (
     CONF_DISCOVERY_DEBUG,
     CONF_FAN_CONTROL_ENABLED,
     CONF_SNAPSHOT_BUTTONS_ENABLED,
@@ -41,7 +41,7 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
-from .wake_on_lan import normalize_mac_address, validate_ipv4_address
+from ..wake_on_lan import normalize_mac_address, validate_ipv4_address
 
 HOSTNAME_LABEL_RE = re.compile(
     r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"

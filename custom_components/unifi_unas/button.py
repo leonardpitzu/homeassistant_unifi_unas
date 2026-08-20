@@ -13,7 +13,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api_errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
+from .api.errors import CannotConnect, InvalidAuth, UnexpectedResponse, UnsupportedFeature
 from .const import (
     CONF_WOL_BROADCAST_ADDRESS,
     CONF_WOL_ENABLED,
@@ -33,15 +33,15 @@ from .entry_options import entry_bool, entry_int, entry_str, entry_value
 from .exceptions import unifi_unas_error, unifi_unas_validation_error
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
 from .security import safe_error_text
-from .snapshot_entities import (
+from .snapshot.entities import (
     UnifiUnasSnapshotTargetEntity,
     async_setup_snapshot_target_entities,
 )
-from .snapshot_repairs import (
+from .snapshot.repairs import (
     async_clear_snapshot_action_issues,
     async_create_snapshot_action_issue,
 )
-from .snapshot_types import (
+from .snapshot.types import (
     snapshot_create_button_supported_for_inventory,
     snapshot_target_slug,
     snapshot_target_type,

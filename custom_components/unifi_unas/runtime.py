@@ -9,11 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 if TYPE_CHECKING:
     from .coordinator import UnifiUnasCoordinator
 
-    type UnifiDriveConfigEntry = ConfigEntry[UnifiUnasCoordinator]
-else:
-    # Keep runtime imports compatible with lightweight tests that stub
-    # ConfigEntry with a non-subscriptable object.
-    UnifiDriveConfigEntry = ConfigEntry
+# PEP 695 aliases evaluate lazily, so the coordinator stays a type-only import.
+type UnifiDriveConfigEntry = ConfigEntry[UnifiUnasCoordinator]
 
 
 def coordinator_from_entry(entry: UnifiDriveConfigEntry) -> UnifiUnasCoordinator:

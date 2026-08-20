@@ -9,20 +9,20 @@ from typing import Any
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 
-from .sensor_types import AggregateSensorDescription
-from .storage_common import _dict_values, _first_number, _text
-from .system_metadata import (
+from ..sensor_types import AggregateSensorDescription
+from ..system_metadata import (
     drive_version as _drive_version,
 )
-from .system_metadata import (
+from ..system_metadata import (
     normalized_token as _normalized_token,
 )
-from .system_metadata import (
+from ..system_metadata import (
     system_payload as _system_payload,
 )
-from .system_metadata import (
+from ..system_metadata import (
     unifi_os_version as _unifi_os_version,
 )
+from .common import _dict_values, _first_number, _text
 
 NETWORK_ADDRESS_KEYS = (
     "ip",

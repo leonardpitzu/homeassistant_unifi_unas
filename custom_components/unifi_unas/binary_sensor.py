@@ -18,7 +18,7 @@ from .binary_sensor_descriptions import (
 from .coordinator import UnifiUnasCoordinator
 from .entity_base import UnifiUnasDeviceInfoMixin
 from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
-from .storage_pools import (
+from .storage.pools import (
     _aggregate_status,
     _at_risk_disk_count,
     _pool_from_key,

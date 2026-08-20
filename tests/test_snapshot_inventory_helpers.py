@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from tests.module_stubs import install_package_stubs, load_integration_module
-
-install_package_stubs()
-snapshot_inventory_module = load_integration_module("snapshot_inventory")
+from custom_components.unifi_unas.snapshot import inventory as snapshot_inventory_module
 
 
 def test_snapshot_inventory_error_sticky_reason_helper() -> None:
