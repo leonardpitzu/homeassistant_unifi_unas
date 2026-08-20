@@ -19,13 +19,13 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from ..api import UnifiUnasApiClient
-from ..api.errors import CannotConnect, InvalidAuth, UnexpectedResponse
-from ..const import CONF_WOL_MAC_ADDRESS
-from ..discovery import feature_defaults_from_system_payload
-from ..discovery.identity import discovery_mac_key
-from ..security import safe_error_text
-from .identity import _entry_info
+from .api import UnifiUnasApiClient
+from .api.errors import CannotConnect, InvalidAuth, UnexpectedResponse
+from .config_flow_identity import _entry_info
+from .const import CONF_WOL_MAC_ADDRESS
+from .discovery import feature_defaults_from_system_payload
+from .discovery.identity import discovery_mac_key
+from .security import safe_error_text
 
 _LOGGER = logging.getLogger(__name__)
 

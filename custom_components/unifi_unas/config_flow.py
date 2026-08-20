@@ -18,8 +18,31 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
-from ..api.errors import CannotConnect
-from ..const import (
+from .api.errors import CannotConnect
+from .config_flow_identity import (
+    _any_unique_id_configured,
+    _entry_info,
+    _entry_matches_validated_device,
+    _entry_unique_id_matches,
+    _feature_reconfigure_would_reload_offline_without_wol,
+)
+from .config_flow_schema import (
+    FlowInputError,
+    _connection_schema,
+    _feature_schema,
+    _merge_feature_defaults,
+    _merged_reauth_data,
+    _merged_reconfigure_data,
+)
+from .config_flow_schema import (
+    _normalize_user_input as _normalize_user_input_impl,
+)
+from .config_flow_validation import (
+    FlowValidator,
+    async_validate_for_form,
+    async_validate_input,
+)
+from .const import (
     CONF_DISCOVERY_CONFIDENCE,
     CONF_DISCOVERY_DEBUG,
     CONF_DISCOVERY_IDENTITY_CONFLICTS,
@@ -28,7 +51,7 @@ from ..const import (
     CONF_WOL_MAC_ADDRESS,
     DOMAIN,
 )
-from ..discovery import (
+from .discovery import (
     CONF_DISCOVERED_DEVICE,
     MANUAL_DISCOVERY_VALUE,
     DiscoveredUnasDevice,
@@ -38,37 +61,37 @@ from ..discovery import (
     discovery_options,
     feature_defaults_from_discovery,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     apply_discovery_identity_defaults as _apply_discovery_identity_defaults,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     discovered_device_host_keys as _discovered_device_host_keys,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     discovery_flow_context_from_device as _discovery_flow_context_from_device,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     discovery_identity_defaults_from_device as _discovery_identity_defaults_from_device,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     discovery_mac_key as _discovery_mac_key,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     discovery_observation_entry_data as _discovery_observation_entry_data,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     entry_discovery_host_keys as _entry_discovery_host_keys,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     entry_discovery_mac_keys as _entry_discovery_mac_keys,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     should_write_discovery_identity_update as _should_write_discovery_identity_update,
 )
-from ..discovery.identity import (
+from .discovery.identity import (
     zeroconf_discovery_unique_id as _zeroconf_discovery_unique_id,
 )
-from ..entry_options import (
+from .entry_options import (
     data_without_feature_options,
     entry_data_from_data,
     feature_options_from_data,
@@ -77,32 +100,9 @@ from ..entry_options import (
     merged_entry_data_with_connection_updates,
     merged_feature_options,
 )
-from ..runtime import UnifiDriveConfigEntry
-from ..security import safe_error_text
-from ..wake_on_lan import normalize_mac_address, validate_ipv4_address
-from .identity import (
-    _any_unique_id_configured,
-    _entry_info,
-    _entry_matches_validated_device,
-    _entry_unique_id_matches,
-    _feature_reconfigure_would_reload_offline_without_wol,
-)
-from .schema import (
-    FlowInputError,
-    _connection_schema,
-    _feature_schema,
-    _merge_feature_defaults,
-    _merged_reauth_data,
-    _merged_reconfigure_data,
-)
-from .schema import (
-    _normalize_user_input as _normalize_user_input_impl,
-)
-from .validation import (
-    FlowValidator,
-    async_validate_for_form,
-    async_validate_input,
-)
+from .runtime import UnifiDriveConfigEntry
+from .security import safe_error_text
+from .wake_on_lan import normalize_mac_address, validate_ipv4_address
 
 _LOGGER = logging.getLogger(__name__)
 _DISCOVERY_METADATA_WRITE_INTERVAL_SECONDS = 5 * 60

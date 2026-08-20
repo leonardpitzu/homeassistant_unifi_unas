@@ -10,8 +10,8 @@ from typing import Any
 import pytest
 
 from custom_components.unifi_unas import config_flow as config_flow_module
+from custom_components.unifi_unas import config_flow_schema as config_flow_schema_module
 from custom_components.unifi_unas import discovery as discovery_module
-from custom_components.unifi_unas.config_flow import schema as config_flow_schema_module
 
 _UTF8_BOM = b"\xef\xbb\xbf"
 

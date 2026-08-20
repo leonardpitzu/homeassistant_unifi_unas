@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from custom_components.unifi_unas import config_flow_identity as config_flow_identity
 from custom_components.unifi_unas import runtime as runtime_module
-from custom_components.unifi_unas.config_flow import identity as config_flow_identity
 from custom_components.unifi_unas.discovery import common as discovery_common
 from custom_components.unifi_unas.snapshot import paths as snapshot_paths
 from custom_components.unifi_unas.snapshot import values as snapshot_values
