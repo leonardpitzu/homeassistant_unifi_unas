@@ -21,8 +21,9 @@ async def async_setup_entry(
     entry: UnifiDriveConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the fan profile select."""
-    async_add_entities([FanModeSelect(entry.runtime_data)])
+    """Set up the fan profile select (local account only; see sensor.py for keys)."""
+    if entry.runtime_data.has_account:
+        async_add_entities([FanModeSelect(entry.runtime_data)])
 
 
 class FanModeSelect(UnifiDriveEntity, SelectEntity):

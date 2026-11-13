@@ -19,7 +19,7 @@ Version 1.0 is a rewrite focused on being cheap to run and easy to read.
 | Integration code | ~15,100 lines | ~1,650 lines |
 | HTTP requests per poll | 3 (+3 every 10 min) | 4, in parallel |
 | Default poll interval | 30 s | 60 s |
-| Entities (UNAS 4, 4 HDD + 2 SSD cache, Wake-on-LAN) | 92 | 63 |
+| Entities (UNAS 4, 4 HDD + 2 SSD cache, API key, Wake-on-LAN) | 92 | 61 |
 | Recorder rows per day (UNAS 4, measured) | ~85,000 | ~7,000 |
 | Long-term statistics series | 54 | 14 |
 
@@ -50,10 +50,19 @@ What changed:
 - A UniFi Drive / UNAS device reachable on the local network.
 - A UniFi **API key** or a local UniFi OS account.
 
-| Credential | Monitoring | Fan profile write | Restart / shut down |
+| Credential | Monitoring | Fan profile | Restart / shut down |
 |---|---|---|---|
-| API key (Drive-scoped) | yes | no (UNAS answers HTTP 500) | no |
-| Local admin account | yes | untested | yes (needs power-off permission) |
+| API key | yes | read-only sensor | not created |
+| Local admin account | yes | select (change it) | buttons |
+
+An API key is all monitoring needs. Its writes are not usable: the Drive UI
+changes the fan with the same `PUT systems/fan-control {"profile": ...}` this
+integration sends, but with a logged-in session; the same request with an API
+key fails with HTTP 500. Restart and shut down are UniFi OS console actions that
+need the `edit:os-settings:restart` / `poweroff` permission of a local admin.
+Controls the configured credentials cannot use are therefore not created, and
+leftovers are removed when credentials change. Fan writes and power actions with
+a local account have not been tested against a live device.
 
 ## Supported devices
 
@@ -87,7 +96,7 @@ Home Assistant.
 | Port | `443` with HTTPS, `80` without. |
 | Use HTTPS / Verify certificate | Match your console; UniFi uses a self-signed certificate by default. |
 | API key | Local UniFi API key. |
-| Username / password | Local account. Used instead of the API key when both are given. |
+| Username / password | Local admin account. Used instead of the API key when both are given; adds the fan select and power buttons. |
 
 The device is identified by its MAC address. **Reconfigure** changes the host
 or port; **reauthenticate** swaps credentials.
@@ -133,8 +142,11 @@ report it (SSDs).
 NAS is unreachable), storage problem (any pool or the cache degraded, or any
 drive at risk), per pool problem.
 
-**Controls:** fan profile select (Quiet / Balance / Cooling), restart and shut
-down buttons, Wake-on-LAN **Start** button when configured. With Wake-on-LAN
+**Fan profile:** read-only sensor (`Quiet` / `Balance` / `Cooling`) with an API
+key, a select with a local account.
+
+**Controls:** restart and shut down buttons (local account only), Wake-on-LAN
+**Start** button when a MAC is configured (any credentials). With Wake-on-LAN
 set, the integration also loads while the NAS is off so the button is there.
 
 A single failed poll keeps the last data; from the second consecutive failure
@@ -190,8 +202,8 @@ usually all that is needed to support a new firmware's payload.
 |---------|-------|
 | Setup cannot connect | Host, port and HTTPS settings, reachable from the Home Assistant host. |
 | Authentication fails | API key validity, or the local account's permissions. |
-| Fan profile change fails | The UNAS rejects fan writes made with an API key (HTTP 500). |
-| Restart / shut down fails | Needs a local admin account; API keys are Drive-scoped. |
+| No fan select / power buttons | Expected with an API key; reauthenticate with a local admin account to get them. |
+| Restart / shut down fails | The local account lacks the console restart / power-off permission. |
 | CPU / uptime sensors empty | The device must expose `systems/device-info` (Drive 4.x). |
 
 ## Development

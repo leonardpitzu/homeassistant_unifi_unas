@@ -29,6 +29,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
+from .const import FAN_PROFILES
 from .coordinator import UnifiDriveConfigEntry, UnifiDriveCoordinator
 from .entity import DriveEntity, PoolEntity, UnifiDriveEntity
 from .models import Drive, Pool, UnasData
@@ -132,6 +133,15 @@ DEVICE_SENSORS: tuple[UnasSensorDescription[UnasData], ...] = (
     ),
 )
 
+# API keys cannot change the fan profile, so key-only setups get it read-only.
+FAN_SENSOR = UnasSensorDescription[UnasData](
+    key="fan_mode",
+    translation_key="fan_mode",
+    device_class=SensorDeviceClass.ENUM,
+    options=list(FAN_PROFILES),
+    value_fn=lambda d: d.fan_mode,
+)
+
 POOL_SENSORS: tuple[UnasSensorDescription[Pool], ...] = (
     UnasSensorDescription(
         key="pool_status",
@@ -210,7 +220,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensors; pool and drive sensors appear as the payload shows them."""
     coordinator = entry.runtime_data
-    async_add_entities(DeviceSensor(coordinator, desc) for desc in DEVICE_SENSORS)
+    descriptions = DEVICE_SENSORS if coordinator.has_account else (*DEVICE_SENSORS, FAN_SENSOR)
+    async_add_entities(DeviceSensor(coordinator, desc) for desc in descriptions)
     known: set[str] = set()
 
     @callback

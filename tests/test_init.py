@@ -8,7 +8,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_SCAN_INTERVAL, STATE_OFF, STATE_ON, STATE_UNAVAILABLE
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
@@ -68,15 +76,17 @@ async def test_setup_creates_entities(hass: HomeAssistant, client: AsyncMock, en
 
     registry = er.async_get(hass)
     entries = er.async_entries_for_config_entry(registry, entry.entry_id)
-    # 12 device + 6 pool + 6 x 4 HDD + 7 x 2 SSD sensors, 3 binary, 2 buttons, 1 select
-    assert len(entries) == 12 + 6 + 24 + 14 + 3 + 2 + 1
+    # API key only: 12 device + fan + 6 pool + 6 x 4 HDD + 7 x 2 SSD sensors, 3 binary, no controls
+    assert len(entries) == 13 + 6 + 24 + 14 + 3
     assert not registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_{HDD1}_drive_life_span")
 
     status = hass.states.get(registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_{HDD1}_drive_status"))
     assert status.attributes["raw_health"] == "optimal"
     assert status.attributes["model"] == "ST8000VN004-3CP101"
-    fan = hass.states.get(registry.async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode"))
+    fan = hass.states.get(registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode"))
     assert fan.state == "Balance"
+    assert not registry.async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode")
+    assert not registry.async_get_entity_id("button", DOMAIN, f"{MAC}_reboot")
 
     device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, MAC), entry.entry_id)
     assert (device.model, device.sw_version) == ("UNAS4W", "6.0.18 / Drive 4.4.30")
@@ -126,8 +136,8 @@ async def test_outage_handling(
     client.async_get_storage.side_effect = None
     await tick()
     assert _state(hass, "overall_status") == "healthy"
-    fan = er.async_get(hass).async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode")
-    assert hass.states.get(fan).state == STATE_UNAVAILABLE
+    fan = er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+    assert hass.states.get(fan).state == STATE_UNKNOWN
 
 
 async def test_auth_failure_starts_reauth(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
@@ -173,9 +183,39 @@ async def test_offline_at_startup(hass: HomeAssistant, client: AsyncMock) -> Non
         await hass.services.async_call("button", "press", {"entity_id": start}, blocking=True)
 
 
-async def test_power_buttons(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
+def _account_entry() -> MockConfigEntry:
+    return MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=MAC,
+        data={**ENTRY_DATA, CONF_USERNAME: "admin", CONF_PASSWORD: "pw"},
+        version=2,
+    )
+
+
+async def test_controls_follow_credentials(hass: HomeAssistant, client: AsyncMock) -> None:
+    """Controls the credentials cannot back are pruned; switching swaps them over."""
+    registry = er.async_get(hass)
+    key_only = MockConfigEntry(domain=DOMAIN, unique_id=MAC, data=ENTRY_DATA, version=2)
+    key_only.add_to_hass(hass)
+    for domain, key in (("button", "reboot"), ("button", "shutdown"), ("select", "fan_mode"), ("button", "wake_on_lan")):
+        registry.async_get_or_create(domain, DOMAIN, f"{MAC}_{key}", config_entry=key_only)
+    await hass.config_entries.async_setup(key_only.entry_id)
+    await hass.async_block_till_done()
+    for domain, key in (("button", "reboot"), ("button", "shutdown"), ("select", "fan_mode"), ("button", "wake_on_lan")):
+        assert not registry.async_get_entity_id(domain, DOMAIN, f"{MAC}_{key}"), key
+    assert registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+
+    hass.config_entries.async_update_entry(key_only, data={**ENTRY_DATA, CONF_USERNAME: "admin", CONF_PASSWORD: "pw"})
+    await hass.config_entries.async_reload(key_only.entry_id)
+    await hass.async_block_till_done()
+    assert not registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+    for domain, key in (("button", "reboot"), ("button", "shutdown"), ("select", "fan_mode")):
+        assert registry.async_get_entity_id(domain, DOMAIN, f"{MAC}_{key}"), key
+
+
+async def test_power_buttons(hass: HomeAssistant, client: AsyncMock) -> None:
     """Restart and shut down call the API and surface permission errors."""
-    await _setup(hass, entry)
+    await _setup(hass, _account_entry())
     registry = er.async_get(hass)
     restart = registry.async_get_entity_id("button", DOMAIN, f"{MAC}_reboot")
     shutdown = registry.async_get_entity_id("button", DOMAIN, f"{MAC}_shutdown")
@@ -188,9 +228,9 @@ async def test_power_buttons(hass: HomeAssistant, client: AsyncMock, entry: Mock
             await hass.services.async_call("button", "press", {"entity_id": shutdown}, blocking=True)
 
 
-async def test_fan_select(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
+async def test_fan_select(hass: HomeAssistant, client: AsyncMock, freezer: FrozenDateTimeFactory) -> None:
     """Selecting a profile sends the API value; failures are surfaced."""
-    await _setup(hass, entry)
+    await _setup(hass, _account_entry())
     fan = er.async_get(hass).async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode")
     await hass.services.async_call("select", "select_option", {"entity_id": fan, "option": "Quiet"}, blocking=True)
     client.async_set_fan_profile.assert_awaited_once_with("quiet")
@@ -198,6 +238,12 @@ async def test_fan_select(hass: HomeAssistant, client: AsyncMock, entry: MockCon
     client.async_set_fan_profile.side_effect = CannotConnect("HTTP 500")
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call("select", "select_option", {"entity_id": fan, "option": "Cooling"}, blocking=True)
+
+    client.async_get_fan_control.side_effect = CannotConnect("x")
+    freezer.tick(timedelta(seconds=61))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert hass.states.get(fan).state == STATE_UNAVAILABLE
 
 
 async def test_diagnostics_are_redacted(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:

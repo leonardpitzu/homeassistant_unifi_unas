@@ -21,7 +21,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import UnifiDriveClient, base_url
-from .const import CONF_WOL_BROADCAST, CONF_WOL_MAC, CONF_WOL_PORT, PLATFORMS
+from .const import CONF_WOL_BROADCAST, CONF_WOL_MAC, CONF_WOL_PORT, DOMAIN, PLATFORMS
 from .coordinator import UnifiDriveConfigEntry, UnifiDriveCoordinator
 from .entity import CURRENT_KEYS
 
@@ -49,9 +49,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnifiDriveConfigEntry) -
             raise
         _LOGGER.info("UniFi Drive is unreachable; continuing for Wake-on-LAN")
     entry.runtime_data = coordinator
+    _async_prune_controls(hass, entry, coordinator.has_account)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
+
+
+def _async_prune_controls(hass: HomeAssistant, entry: UnifiDriveConfigEntry, has_account: bool) -> None:
+    """Drop control entities the current settings cannot back.
+
+    API keys are Drive-scoped and read-only for these endpoints: restart and
+    shut down are UniFi OS console actions, and fan-profile writes fail with
+    HTTP 500. Key-only setups therefore get a read-only fan sensor instead of
+    the select and no power buttons; switching credentials swaps them over.
+    """
+    stale = [("sensor", "fan_mode")] if has_account else [("button", "reboot"), ("button", "shutdown"), ("select", "fan_mode")]
+    if CONF_WOL_MAC not in entry.options:
+        stale.append(("button", "wake_on_lan"))
+    registry = er.async_get(hass)
+    for domain, key in stale:
+        if entity_id := registry.async_get_entity_id(domain, DOMAIN, f"{entry.unique_id or entry.entry_id}_{key}"):
+            registry.async_remove(entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: UnifiDriveConfigEntry) -> bool:

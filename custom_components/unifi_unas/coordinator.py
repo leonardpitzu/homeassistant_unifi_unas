@@ -8,7 +8,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
@@ -39,6 +39,8 @@ class UnifiDriveCoordinator(DataUpdateCoordinator[UnasData]):
         )
         self.client = client
         self.device_id = entry.unique_id or entry.entry_id
+        # Same rule as the client: a local account wins over an API key.
+        self.has_account = bool(str(entry.data.get(CONF_USERNAME) or "").strip() and entry.data.get(CONF_PASSWORD))
         # Last raw responses, kept for diagnostics only.
         self.raw: dict[str, Any] = {}
         self._failures = 0

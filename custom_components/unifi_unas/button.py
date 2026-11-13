@@ -24,12 +24,14 @@ async def async_setup_entry(
     entry: UnifiDriveConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up restart / shut down and, when configured, Wake-on-LAN."""
+    """Set up restart / shut down (local account only) and Wake-on-LAN (if configured)."""
     coordinator = entry.runtime_data
-    entities: list[ButtonEntity] = [
-        PowerButton(coordinator, "reboot", "restart", ButtonDeviceClass.RESTART),
-        PowerButton(coordinator, "shutdown", "shutdown", None),
-    ]
+    entities: list[ButtonEntity] = []
+    if coordinator.has_account:
+        entities += [
+            PowerButton(coordinator, "reboot", "restart", ButtonDeviceClass.RESTART),
+            PowerButton(coordinator, "shutdown", "shutdown", None),
+        ]
     if mac := entry.options.get(CONF_WOL_MAC):
         entities.append(
             WakeOnLanButton(
@@ -43,7 +45,7 @@ async def async_setup_entry(
 
 
 class PowerButton(UnifiDriveEntity, ButtonEntity):
-    """Restart or power off the console (needs a local account, not an API key)."""
+    """Restart or power off the console (local account with console permission)."""
 
     _attr_entity_category = EntityCategory.CONFIG
 
@@ -65,9 +67,7 @@ class PowerButton(UnifiDriveEntity, ButtonEntity):
         try:
             await self._action()
         except InvalidAuth as err:
-            raise HomeAssistantError(
-                "The UniFi account is not allowed to do this (API keys cannot; use a local admin account)"
-            ) from err
+            raise HomeAssistantError("The UniFi account lacks the console restart / power-off permission") from err
         except UnifiDriveError as err:
             raise HomeAssistantError(f"UniFi Drive power action failed: {err}") from err
 

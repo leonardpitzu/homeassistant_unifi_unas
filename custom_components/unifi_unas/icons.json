@@ -1,26 +1,60 @@
 {
   "entity": {
     "binary_sensor": {
-      "storage_problem": { "default": "mdi:harddisk", "state": { "on": "mdi:harddisk-remove" } }
+      "storage_problem": {
+        "default": "mdi:harddisk",
+        "state": {
+          "on": "mdi:harddisk-remove"
+        }
+      }
     },
     "button": {
-      "shutdown": { "default": "mdi:power" },
-      "wake_on_lan": { "default": "mdi:power-on" }
+      "shutdown": {
+        "default": "mdi:power"
+      },
+      "wake_on_lan": {
+        "default": "mdi:power-on"
+      }
     },
     "select": {
-      "fan_mode": { "default": "mdi:fan" }
+      "fan_mode": {
+        "default": "mdi:fan"
+      }
     },
     "sensor": {
-      "overall_status": { "default": "mdi:nas" },
-      "at_risk_disk_count": { "default": "mdi:harddisk-remove" },
-      "cache_status": { "default": "mdi:flash" },
-      "ssd_wear": { "default": "mdi:chart-donut" },
-      "usage_percent": { "default": "mdi:harddisk" },
-      "cpu_percent": { "default": "mdi:cpu-64-bit" },
-      "memory_percent": { "default": "mdi:memory" },
-      "uptime": { "default": "mdi:timer-outline" },
-      "read_throughput": { "default": "mdi:download" },
-      "write_throughput": { "default": "mdi:upload" }
+      "overall_status": {
+        "default": "mdi:nas"
+      },
+      "at_risk_disk_count": {
+        "default": "mdi:harddisk-remove"
+      },
+      "cache_status": {
+        "default": "mdi:flash"
+      },
+      "ssd_wear": {
+        "default": "mdi:chart-donut"
+      },
+      "usage_percent": {
+        "default": "mdi:harddisk"
+      },
+      "cpu_percent": {
+        "default": "mdi:cpu-64-bit"
+      },
+      "memory_percent": {
+        "default": "mdi:memory"
+      },
+      "uptime": {
+        "default": "mdi:timer-outline"
+      },
+      "read_throughput": {
+        "default": "mdi:download"
+      },
+      "write_throughput": {
+        "default": "mdi:upload"
+      },
+      "fan_mode": {
+        "default": "mdi:fan"
+      }
     }
   }
 }
