@@ -94,6 +94,7 @@ async def test_reconfigure(hass: HomeAssistant, client: AsyncMock, entry: MockCo
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_HOST] == "nas2"
     assert entry.data[CONF_API_KEY] == "test-key"
+    await _settle(hass, entry)
 
 
 async def test_reauth(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
@@ -112,6 +113,7 @@ async def test_reauth(hass: HomeAssistant, client: AsyncMock, entry: MockConfigE
     assert CONF_API_KEY not in entry.data
     assert entry.data[CONF_USERNAME] == "admin"
     assert entry.data[CONF_HOST] == "192.0.2.10"
+    await _settle(hass, entry)
 
 
 async def test_options(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
@@ -130,6 +132,13 @@ async def test_options(hass: HomeAssistant, client: AsyncMock, entry: MockConfig
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(result["flow_id"], {**options, CONF_WOL_MAC: ""})
     assert CONF_WOL_MAC not in entry.options
+
+
+async def _settle(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    """Let the reload these flows schedule finish, then unload (no stray timers)."""
+    await hass.async_block_till_done()
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
 
 
 def _connection() -> dict[str, object]:

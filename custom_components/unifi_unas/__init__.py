@@ -94,15 +94,35 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+# v1 pool/drive keys that v2 dropped. Needed because some end in a current key
+# (``pool_average_drive_temperature`` ends in ``drive_temperature``).
+_V1_NESTED_KEYS = frozenset(
+    {
+        "pool_average_drive_temperature",
+        "pool_drive_count",
+        "pool_maintenance_active",
+        "pool_raid_level",
+        "pool_sync_progress",
+        "pool_usage_percent",
+        "drive_model",
+    }
+)
+
+
 def _is_current_unique_id(suffix: str) -> bool:
     """Return whether a unique-ID suffix belongs to an entity v2 still creates.
 
-    Device-level keys must match exactly; pool and drive keys are suffixes of
-    ``<pool>_<key>`` / ``<group>_<drive>_<key>``. Only cache SSDs report a
-    remaining life, so HDD life-span entities (always unknown) are dropped.
+    Device-level keys must match exactly; pool and drive keys end
+    ``<pool>_<key>`` / ``<group>_<drive>_<key>``, and the longest matching key
+    decides. Only cache SSDs report a remaining life, so HDD life-span entities
+    (always unknown) are dropped.
     """
     if suffix in CURRENT_KEYS.device:
         return True
-    if suffix.endswith("_drive_life_span"):
+    matches = [key for key in CURRENT_KEYS.nested | _V1_NESTED_KEYS if suffix.endswith(f"_{key}")]
+    if not matches:
+        return False
+    key = max(matches, key=len)
+    if key == "drive_life_span":
         return suffix.startswith("cache_")
-    return any(suffix.endswith(f"_{key}") for key in CURRENT_KEYS.nested)
+    return key in CURRENT_KEYS.nested

@@ -237,7 +237,14 @@ async def test_migrate_v1(hass: HomeAssistant, client: AsyncMock) -> None:
     entry.add_to_hass(hass)
     registry = er.async_get(hass)
     kept = {
-        "sensor": ["overall_status", f"{POOL}_pool_used", f"{HDD1}_drive_status", "cache_sn000005_drive_life_span"],
+        "sensor": [
+            "overall_status",
+            f"{POOL}_pool_used",
+            f"{POOL}_pool_at_risk_drive_count",
+            f"{HDD1}_drive_status",
+            f"{HDD1}_drive_temperature",
+            "cache_sn000005_drive_life_span",
+        ],
         "button": ["wake_on_lan"],
     }
     dropped = {
@@ -246,6 +253,7 @@ async def test_migrate_v1(hass: HomeAssistant, client: AsyncMock) -> None:
             "system_ip",
             f"{POOL}_pool_usage_percent",
             f"{POOL}_pool_drive_count",
+            f"{POOL}_pool_average_drive_temperature",
             f"{HDD1}_drive_model",
             f"{HDD1}_drive_life_span",
         ],
