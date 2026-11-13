@@ -10,17 +10,17 @@ maintained for my own UNAS 4. It keeps the `unifi_unas` domain and the entity
 unique IDs, so it is a drop-in replacement: entity IDs, history, dashboards and
 automations carry over.
 
-## 1.0: lean rewrite
+## 1.x: lean rewrite
 
 Version 1.0 is a rewrite focused on being cheap to run and easy to read.
 
-| | 0.8.x | 1.0 |
+| | 0.8.x | 1.x |
 |---|---|---|
-| Integration code | ~15,100 lines | ~1,650 lines |
+| Integration code | ~15,100 lines | ~1,750 lines |
 | HTTP requests per poll | 3 (+3 every 10 min) | 4, in parallel |
 | Default poll interval | 30 s | 60 s |
 | Entities (UNAS 4, 4 HDD + 2 SSD cache, API key, Wake-on-LAN) | 92 | 61 |
-| Recorder rows per day (UNAS 4, measured) | ~85,000 | ~7,000 |
+| Recorder rows per day (UNAS 4, measured) | ~85,000 | ~6,500 |
 | Long-term statistics series | 54 | 14 |
 
 What changed:
@@ -43,6 +43,17 @@ What changed:
 - **Removed:** snapshot controls, backup-task polling, firmware `update`
   entities, zeroconf discovery, the custom services, and the duplicate or
   always-empty entities listed under [Upgrading from 0.x](#upgrading-from-0x).
+
+A test feeds the integration a poll where only that kind of noise changes
+(read error rates, per-disk I/O counters, cache dirty bytes, timestamps) and
+fails if any entity state is rewritten.
+
+| Version | Change |
+|---|---|
+| 1.0 | Rewrite described above; config entry migration from 0.x. |
+| 1.1 | Fan select and power buttons only with a local account; API keys get a read-only fan sensor. |
+| 1.2 | **Reconfigure** adds, replaces or removes credentials. |
+| 1.3 | Redirects are refused (credentials are never sent to another URL); disks not yet in a pool get entities. |
 
 ## Requirements
 
@@ -69,7 +80,7 @@ a local account have not been tested against a live device.
 | Device | Firmware | Evidence |
 |--------|----------|----------|
 | UNAS 4 (UNAS4W) | UniFi OS `6.0.18`, Drive `4.4.30` | primary target; test fixtures are a sanitized capture |
-| UNAS 2 | UniFi OS `5.1.x` | inherited from upstream, same Drive API |
+| UNAS 2 | UniFi OS `5.1.x` | reported working with upstream 0.8; not tested with 1.x |
 | Other UniFi Drive / UNAS models | unknown | expected to work where the Drive v2 API matches |
 
 ## Installation
@@ -147,7 +158,10 @@ progress, capacity, used, available.
 **Per drive** (pool members and cache SSDs): status (attributes `raw_health`,
 `media_type`, `model`, `firmware`), temperature (statistics), power-on hours,
 capacity, bad sectors, uncorrectable sectors, and remaining life for drives that
-report it (SSDs).
+report it (SSDs). A disk not (yet) in a pool, such as a fresh replacement, is
+treated as a member of the pool when there is only one, so its entities keep
+their IDs once the NAS adds it; with several pools it appears under
+"Unassigned".
 
 **Binary sensors:** device connection (stays available, reports `off` when the
 NAS is unreachable), storage problem (any pool or the cache degraded, or any
@@ -180,8 +194,12 @@ The config entry migrates automatically on first start (entry version 1 -> 2):
   - per-drive model (now an attribute of the drive status sensor),
   - HDD remaining life (HDDs never report it),
   - firmware update entities, snapshot and backup entities.
-- The `unifi_unas.*` services are gone. Use `button.press` on the restart /
-  shut down / Start buttons and `select.select_option` on the fan profile.
+- The `unifi_unas.*` services are gone. Use `button.press` on the Start
+  (Wake-on-LAN) button and, with a local account, on restart / shut down, and
+  `select.select_option` on the fan profile select.
+- With an API key only, the fan select and the restart / shut down buttons are
+  removed and a read-only `sensor.<device>_fan_mode` appears (1.1); repoint
+  dashboard cards that used the select.
 
 Existing history of the removed entities stays in the recorder until it ages
 out, or remove it with `recorder.purge_entities`.
@@ -207,11 +225,15 @@ Downloaded diagnostics contain the entry (credentials and host redacted) and the
 last raw API responses with serials, MAC and IP addresses redacted. That is
 usually all that is needed to support a new firmware's payload.
 
+The client never follows HTTP redirects, so the API key or session cookie is only
+ever sent to the configured host. A redirect (for example HTTP -> HTTPS) is
+reported as a connection error pointing at the host, port and HTTPS settings.
+
 ## Troubleshooting
 
 | Symptom | Check |
 |---------|-------|
-| Setup cannot connect | Host, port and HTTPS settings, reachable from the Home Assistant host. |
+| Setup cannot connect | Host, port and HTTPS settings, reachable from the Home Assistant host. A "redirected" error means the port / HTTPS setting does not match the console. |
 | Authentication fails | API key validity, or the local account's permissions. |
 | No fan select / power buttons | Expected with an API key; add a local admin account via **Reconfigure**. |
 | Restart / shut down fails | The local account lacks the console restart / power-off permission. |

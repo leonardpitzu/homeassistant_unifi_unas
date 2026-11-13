@@ -26,6 +26,7 @@ from .const import FAN_ALIASES
 
 GIB = 1024**3
 CACHE_KEY = "cache"
+UNASSIGNED_KEY = "unassigned"
 _HEALTHY = {"fullyoperational", "nodataprotectionyet", "healthy", "optimal", "ok", "normal", "online"}
 _PROBLEM_HINTS = ("degraded", "critical", "fail", "error", "offline", "risk", "fault", "bad", "missing")
 
@@ -93,6 +94,7 @@ class UnasData:
 
     pools: dict[str, Pool]
     cache_drives: tuple[Drive, ...]
+    unassigned_drives: tuple[Drive, ...]
     cache_status: str | None
     cpu_temperature: float | None
     cpu_percent: float | None
@@ -107,7 +109,8 @@ class UnasData:
     drives: dict[str, Drive] = field(init=False)
 
     def __post_init__(self) -> None:
-        all_drives = [d for pool in self.pools.values() for d in pool.drives] + list(self.cache_drives)
+        all_drives = [d for pool in self.pools.values() for d in pool.drives]
+        all_drives += [*self.cache_drives, *self.unassigned_drives]
         object.__setattr__(self, "drives", {d.key: d for d in all_drives})
 
     @property
@@ -180,13 +183,21 @@ def parse(
     memory = _dict(info.get("memory"))
     disks = _dicts(storage.get("disks"))
 
+    raw_pools = _dicts(storage.get("pools"))
+    pool_ids = {_text(raw.get("id")) for raw in raw_pools} - {None}
+    # Disks not (yet) in a known pool, e.g. a replacement before it joins the
+    # array. With one pool they belong to it, so their IDs do not change once
+    # the NAS assigns them; otherwise they get an "Unassigned" group.
+    orphans = [d for d in disks if _text(d.get("poolId")) not in pool_ids]
     pools: dict[str, Pool] = {}
     cache_status: str | None = None
-    for index, raw in enumerate(_dicts(storage.get("pools"))):
+    for index, raw in enumerate(raw_pools):
         pool_id = _text(raw.get("id"))
         key = _slug(pool_id) if pool_id else f"pool_{index + 1}"
         name = f"Pool {raw.get('number') or index + 1}"
         members = [d for d in disks if pool_id and d.get("poolId") == pool_id]
+        if len(raw_pools) == 1:
+            members += orphans
         pools[key] = Pool(
             key=key,
             name=name,
@@ -207,6 +218,9 @@ def parse(
         cache_drives=tuple(
             _drive(d, CACHE_KEY, "Cache", i) for i, d in enumerate(_dicts(storage.get("cacheSlots")))
         ),
+        unassigned_drives=()
+        if len(raw_pools) == 1
+        else tuple(_drive(d, UNASSIGNED_KEY, "Unassigned", i) for i, d in enumerate(orphans)),
         cache_status=cache_status,
         # Whole numbers on purpose: tenths changed on every poll and were the
         # bulk of this integration's recorder writes.

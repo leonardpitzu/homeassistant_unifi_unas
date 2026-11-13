@@ -344,3 +344,36 @@ async def test_migrate_from_future_fails(hass: HomeAssistant, client: AsyncMock)
     entry = MockConfigEntry(domain=DOMAIN, unique_id=MAC, data=ENTRY_DATA, version=3)
     await _setup(hass, entry)
     assert entry.state is ConfigEntryState.MIGRATION_ERROR
+
+
+async def test_volatile_fields_write_nothing(
+    hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Counters that changed every poll in 0.8 no longer touch any state.
+
+    0.8 wrote ~72k recorder rows a day because Seagate's raw read error rate
+    sat in every HDD sensor's attributes. A refresh where only such noise
+    changes must not rewrite a single state (no state_changed, no row).
+    """
+    freezer.move_to("2026-11-13T12:00:30+00:00")
+    await _setup(hass, entry)
+    ids = [e.entity_id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)]
+    before = {entity_id: hass.states.get(entity_id).last_updated for entity_id in ids}
+
+    storage = load("storage")
+    for disk in storage["disks"] + storage["cacheSlots"]:
+        disk["readErrorRate"] += 12345
+        disk["readKBPS"] += 64
+        disk["writeKBPS"] += 64
+    storage["pools"][0]["cache"]["composition"]["dirty"] += 4096
+    client.async_get_storage.return_value = storage
+    network_io = load("network_io")
+    network_io["timestamp"] = "2026-11-13T14:01:31+02:00"
+    client.async_get_network_io.return_value = network_io
+
+    freezer.tick(timedelta(seconds=61))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert client.async_get_storage.await_count == 2
+    changed = [entity_id for entity_id in ids if hass.states.get(entity_id).last_updated != before[entity_id]]
+    assert changed == []

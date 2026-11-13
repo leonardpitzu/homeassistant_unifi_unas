@@ -130,3 +130,17 @@ def test_uptime_format() -> None:
         with patch("custom_components.unifi_unas.models.datetime", wraps=datetime) as dt:
             dt.now.return_value = now
             assert _parse(device_info=info).uptime == expected
+
+
+def test_unassigned_drives() -> None:
+    """Disks outside any known pool join the only pool, else an Unassigned group."""
+    storage = load("storage")
+    storage["disks"].append({**storage["disks"][0], "serial": "NEW1", "slotId": "5", "poolId": ""})
+    single = _parse(storage)
+    assert f"{POOL}_new1" in single.drives
+    assert len(single.pools[POOL].drives) == 5
+
+    storage["pools"].append({**storage["pools"][0], "id": "second", "number": 2})
+    multi = _parse(storage)
+    assert multi.drives["unassigned_new1"].group_name == "Unassigned"
+    assert len(multi.pools[POOL].drives) == 4

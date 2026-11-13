@@ -107,3 +107,13 @@ async def test_login_failures(
     aioclient_mock.post(URL + LOGIN_PATH, **kwargs)
     with pytest.raises(error):
         await _client(hass, aioclient_mock, username="admin", password="pw").async_poweroff()
+
+
+async def test_redirects_are_refused(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    """A redirect is an error, so credentials are never sent to another URL."""
+    aioclient_mock.get(URL + STORAGE_PATH, status=302, headers={"Location": "https://elsewhere/"})
+    aioclient_mock.post(URL + LOGIN_PATH, status=307)
+    with pytest.raises(CannotConnect, match="redirected"):
+        await _client(hass, aioclient_mock, api_key="key").async_get_storage()
+    with pytest.raises(CannotConnect, match="redirected"):
+        await _client(hass, aioclient_mock, username="admin", password="pw").async_get_storage()

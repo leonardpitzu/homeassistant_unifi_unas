@@ -45,6 +45,12 @@ def base_url(host: str, port: int, use_ssl: bool) -> str:
     return f"{scheme}://{host}" if port == default_port else f"{scheme}://{host}:{port}"
 
 
+def _status_error(path: str, status: int) -> str:
+    if 300 <= status < 400:
+        return f"{path} redirected (HTTP {status}); check the host, port and HTTPS settings"
+    return f"{path} returned HTTP {status}"
+
+
 class UnifiDriveClient:
     """Talk to one UniFi Drive console with an API key or a local account."""
 
@@ -136,15 +142,17 @@ class UnifiDriveClient:
             headers["X-API-Key"] = self._api_key or ""
         try:
             async with asyncio.timeout(REQUEST_TIMEOUT):
+                # Never follow redirects: aiohttp would forward the API key or
+                # session cookie to wherever the redirect points.
                 async with self._session.request(
-                    method, self.url + path, json=body, headers=headers, ssl=self._ssl
+                    method, self.url + path, json=body, headers=headers, ssl=self._ssl, allow_redirects=False
                 ) as resp:
                     if csrf := resp.headers.get("X-Updated-CSRF-Token") or resp.headers.get("X-CSRF-Token"):
                         self._csrf = csrf
                     if resp.status in (401, 403):
                         raise InvalidAuth(f"{path} returned HTTP {resp.status}")
-                    if resp.status >= 400:
-                        raise CannotConnect(f"{path} returned HTTP {resp.status}")
+                    if resp.status >= 300:
+                        raise CannotConnect(_status_error(path, resp.status))
                     if resp.content_type != "application/json":
                         await resp.read()
                         return None
@@ -165,11 +173,12 @@ class UnifiDriveClient:
                         json=payload,
                         headers={"Accept": "application/json"},
                         ssl=self._ssl,
+                        allow_redirects=False,
                     ) as resp:
                         if resp.status in (400, 401, 403):
                             raise InvalidAuth("Invalid username or password")
-                        if resp.status >= 400:
-                            raise CannotConnect(f"Login returned HTTP {resp.status}")
+                        if resp.status >= 300:
+                            raise CannotConnect(_status_error(LOGIN_PATH, resp.status))
                         self._csrf = resp.headers.get("X-Updated-CSRF-Token") or resp.headers.get(
                             "X-CSRF-Token", self._csrf
                         )
