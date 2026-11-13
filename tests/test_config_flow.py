@@ -9,6 +9,7 @@ from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unifi_unas.api import CannotConnect, InvalidAuth
@@ -143,3 +144,38 @@ async def _settle(hass: HomeAssistant, entry: MockConfigEntry) -> None:
 
 def _connection() -> dict[str, object]:
     return {k: v for k, v in ENTRY_DATA.items() if k != CONF_API_KEY}
+
+
+async def test_reconfigure_credentials(hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry) -> None:
+    """Credentials can be added, kept and removed without re-adding the device."""
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    assert registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+
+    async def reconfigure(**fields: str) -> None:
+        result = await entry.start_reconfigure_flow(hass)
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {**_connection(), **fields})
+        assert result["reason"] == "reconfigure_successful"
+        await hass.async_block_till_done()
+
+    # Add a local account: the key stays, the select and power buttons appear.
+    await reconfigure(**{CONF_USERNAME: "admin", CONF_PASSWORD: "pw"})
+    assert entry.data[CONF_API_KEY] == "test-key"
+    assert (entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]) == ("admin", "pw")
+    assert registry.async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode")
+    assert registry.async_get_entity_id("button", DOMAIN, f"{MAC}_reboot")
+    assert not registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+
+    # Blank secrets keep the stored ones; a new key replaces the old one.
+    await reconfigure(**{CONF_USERNAME: "admin", CONF_API_KEY: " new-key "})
+    assert (entry.data[CONF_API_KEY], entry.data[CONF_PASSWORD]) == ("new-key", "pw")
+
+    # Clearing the username removes the account and swaps the controls back.
+    await reconfigure(**{CONF_USERNAME: ""})
+    assert CONF_USERNAME not in entry.data
+    assert CONF_PASSWORD not in entry.data
+    assert registry.async_get_entity_id("sensor", DOMAIN, f"{MAC}_fan_mode")
+    assert not registry.async_get_entity_id("button", DOMAIN, f"{MAC}_reboot")
+    await _settle(hass, entry)

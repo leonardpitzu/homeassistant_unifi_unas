@@ -98,8 +98,19 @@ Home Assistant.
 | API key | Local UniFi API key. |
 | Username / password | Local admin account. Used instead of the API key when both are given; adds the fan select and power buttons. |
 
-The device is identified by its MAC address. **Reconfigure** changes the host
-or port; **reauthenticate** swaps credentials.
+The device is identified by its MAC address.
+
+**Reconfigure** (integration entry -> three-dot menu) changes the connection and
+the credentials without removing the device or its history:
+
+- API key: leave empty to keep the current one, or enter a new one.
+- Username: prefilled; clear it to remove the local account.
+- Password: leave empty to keep the current one.
+
+Adding or removing a local account reloads the entry and swaps the fan sensor
+for the fan select (and adds / removes the restart and shut down buttons), so
+point dashboard cards at the new entity. **Reauthenticate** appears on its own
+when the stored credentials stop working.
 
 ## Options
 
@@ -202,7 +213,7 @@ usually all that is needed to support a new firmware's payload.
 |---------|-------|
 | Setup cannot connect | Host, port and HTTPS settings, reachable from the Home Assistant host. |
 | Authentication fails | API key validity, or the local account's permissions. |
-| No fan select / power buttons | Expected with an API key; reauthenticate with a local admin account to get them. |
+| No fan select / power buttons | Expected with an API key; add a local admin account via **Reconfigure**. |
 | Restart / shut down fails | The local account lacks the console restart / power-off permission. |
 | CPU / uptime sensors empty | The device must expose `systems/device-info` (Drive 4.x). |
 

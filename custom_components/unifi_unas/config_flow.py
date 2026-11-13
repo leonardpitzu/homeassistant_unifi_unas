@@ -70,6 +70,36 @@ def _credentials_schema() -> vol.Schema:
     )
 
 
+def _reconfigure_schema(defaults: Mapping[str, Any]) -> vol.Schema:
+    """Connection fields plus credentials; secrets are never echoed back."""
+    return _connection_schema(defaults).extend(
+        {
+            vol.Optional(CONF_API_KEY): _PASSWORD,
+            vol.Optional(CONF_USERNAME, description={"suggested_value": defaults.get(CONF_USERNAME, "")}): str,
+            vol.Optional(CONF_PASSWORD): _PASSWORD,
+        }
+    )
+
+
+def _merge_reconfigure(current: Mapping[str, Any], user_input: Mapping[str, Any]) -> dict[str, Any]:
+    """Apply a reconfigure form to the entry data.
+
+    A blank API key or password keeps the stored one; a cleared username
+    removes the local account (and its password).
+    """
+    data = {**current, **{key: user_input[key] for key in _CONNECTION_KEYS}}
+    if api_key := str(user_input.get(CONF_API_KEY) or "").strip():
+        data[CONF_API_KEY] = api_key
+    if username := str(user_input.get(CONF_USERNAME) or "").strip():
+        data[CONF_USERNAME] = username
+        if password := user_input.get(CONF_PASSWORD):
+            data[CONF_PASSWORD] = password
+    else:
+        data.pop(CONF_USERNAME, None)
+        data.pop(CONF_PASSWORD, None)
+    return data
+
+
 async def _async_validate(hass: HomeAssistant, data: Mapping[str, Any]) -> str:
     """Check connectivity and credentials; return the device MAC (unique ID)."""
     client = UnifiDriveClient(
@@ -115,18 +145,18 @@ class UnifiDriveConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Change host or connection settings, keeping the credentials."""
+        """Change connection settings or add, replace or remove credentials."""
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
-            data = {**entry.data, **user_input}
+            data = _merge_reconfigure(entry.data, user_input)
             mac, errors = await _async_try(self.hass, data)
             if mac:
                 await self.async_set_unique_id(mac)
                 self._abort_if_unique_id_mismatch(reason="wrong_device")
                 return self.async_update_reload_and_abort(entry, data=data)
         return self.async_show_form(
-            step_id="reconfigure", data_schema=_connection_schema(user_input or entry.data), errors=errors
+            step_id="reconfigure", data_schema=_reconfigure_schema(user_input or entry.data), errors=errors
         )
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:

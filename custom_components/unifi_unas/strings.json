@@ -14,11 +14,20 @@
         }
       },
       "reconfigure": {
+        "description": "Change the connection, or add, replace or remove credentials. A local admin account adds the fan select and the restart / shut down buttons.",
         "data": {
           "host": "Host",
           "port": "Port",
           "ssl": "Use HTTPS",
-          "verify_ssl": "Verify certificate"
+          "verify_ssl": "Verify certificate",
+          "api_key": "API key",
+          "username": "Username",
+          "password": "Password"
+        },
+        "data_description": {
+          "api_key": "Leave empty to keep the current key.",
+          "username": "Clear to remove the local account.",
+          "password": "Leave empty to keep the current password."
         }
       },
       "reauth_confirm": {
