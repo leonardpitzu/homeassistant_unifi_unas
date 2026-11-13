@@ -1,1 +1,1 @@
-"""Test package for shared helper imports."""
+"""Tests for the UniFi Drive / UNAS integration."""

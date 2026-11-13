@@ -1,35 +1,14 @@
-"""Binary sensors for the UniFi Drive integration."""
+"""Binary sensors for the UniFi Drive / UNAS integration."""
 
 from __future__ import annotations
 
-from typing import Any
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
-from .binary_sensor_descriptions import (
-    AGGREGATE_BINARY_SENSOR_TYPES,
-    POOL_BINARY_SENSOR_TYPES,
-    AggregateBinarySensorDescription,
-    PoolBinarySensorDescription,
-)
-from .coordinator import UnifiUnasCoordinator
-from .entity_base import UnifiUnasDeviceInfoMixin
-from .runtime import UnifiDriveConfigEntry, coordinator_from_entry
-from .storage.pools import (
-    _aggregate_status,
-    _at_risk_disk_count,
-    _pool_from_key,
-    _pool_in_maintenance,
-    _pool_key,
-    _pool_name,
-    _pool_rebuild_progress,
-    _pool_sync_progress,
-    _pools,
-    _raw_pool_status,
-)
+from .coordinator import UnifiDriveConfigEntry, UnifiDriveCoordinator
+from .entity import PoolEntity, UnifiDriveEntity
+from .models import Pool
 
 PARALLEL_UPDATES = 0
 
@@ -37,178 +16,73 @@ PARALLEL_UPDATES = 0
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: UnifiDriveConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up UniFi Drive binary sensors from a config entry."""
-    coordinator = coordinator_from_entry(entry)
+    """Set up binary sensors."""
+    coordinator = entry.runtime_data
+    async_add_entities([OnlineSensor(coordinator), StorageProblemSensor(coordinator)])
+    known: set[str] = set()
 
-    async_add_entities(
-        [
-            UnifiUnasAggregateBinarySensor(coordinator, entry, description)
-            for description in AGGREGATE_BINARY_SENSOR_TYPES
-        ]
-    )
+    @callback
+    def _add_new() -> None:
+        if (data := coordinator.data) is None:
+            return
+        new = [pool for key, pool in data.pools.items() if key not in known]
+        known.update(pool.key for pool in new)
+        if new:
+            async_add_entities(PoolProblemSensor(coordinator, pool) for pool in new)
 
-    known_pool_keys: set[str] = set()
-
-    def _add_missing_pool_binary_sensors() -> None:
-        """Create pool binary sensors when pool data becomes available."""
-        new_entities: list[BinarySensorEntity] = []
-        for index, pool in enumerate(_pools(coordinator.data)):
-            pool_key = _pool_key(pool, index)
-            if pool_key in known_pool_keys:
-                continue
-            known_pool_keys.add(pool_key)
-            pool_name = _pool_name(pool, index)
-            new_entities.extend(
-                UnifiUnasPoolBinarySensor(
-                    coordinator,
-                    entry,
-                    description,
-                    pool_key,
-                    pool_name,
-                )
-                for description in POOL_BINARY_SENSOR_TYPES
-            )
-
-        if new_entities:
-            async_add_entities(new_entities)
-
-    _add_missing_pool_binary_sensors()
-    entry.async_on_unload(
-        coordinator.async_add_listener(_add_missing_pool_binary_sensors)
-    )
+    _add_new()
+    entry.async_on_unload(coordinator.async_add_listener(_add_new))
 
 
-class UnifiUnasBaseBinarySensor(
-    UnifiUnasDeviceInfoMixin,
-    CoordinatorEntity[UnifiUnasCoordinator],
-    BinarySensorEntity,
-):
-    """Common base for UniFi Drive binary sensors."""
+class OnlineSensor(UnifiDriveEntity, BinarySensorEntity):
+    """Whether the console answers; stays available to report ``off``."""
 
-    _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_translation_key = "device_online"
 
-    def __init__(
-        self,
-        coordinator: UnifiUnasCoordinator,
-        entry: UnifiDriveConfigEntry,
-    ) -> None:
-        """Initialize the binary sensor."""
-        super().__init__(coordinator)
-        self._set_device_context(entry)
-
-
-class UnifiUnasAggregateBinarySensor(UnifiUnasBaseBinarySensor):
-    """Aggregate UNAS binary sensor."""
-
-    entity_description: AggregateBinarySensorDescription
-
-    def __init__(
-        self,
-        coordinator: UnifiUnasCoordinator,
-        entry: UnifiDriveConfigEntry,
-        description: AggregateBinarySensorDescription,
-    ) -> None:
-        """Initialize the aggregate binary sensor."""
-        super().__init__(coordinator, entry)
-        self.entity_description = description
-        self._attr_unique_id = f"{self._device_identifier}_{description.key}"
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return the current binary state."""
-        if self.entity_description.key == "device_online":
-            return self.coordinator.is_device_online
-        if not self.coordinator.data:
-            return None
-        return self.entity_description.value_fn(self.coordinator.data)
+    def __init__(self, coordinator: UnifiDriveCoordinator) -> None:
+        """Initialize."""
+        super().__init__(coordinator, "device_online")
 
     @property
     def available(self) -> bool:
-        """Return availability."""
-        if self.entity_description.key == "device_online":
-            return True
-        return bool(super().available)
+        """Always available."""
+        return True
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return aggregate diagnostic attributes."""
-        if not self.coordinator.data:
-            return None
-
-        if self.entity_description.key == "storage_problem":
-            return {
-                "overall_status": _aggregate_status(self.coordinator.data),
-                "at_risk_disk_count": _at_risk_disk_count(self.coordinator.data),
-            }
-
-        if self.entity_description.key == "maintenance_active":
-            return {
-                "pool_count": len(_pools(self.coordinator.data)),
-                "maintenance_pool_count": sum(
-                    1
-                    for pool in _pools(self.coordinator.data)
-                    if _pool_in_maintenance(pool)
-                ),
-            }
-
-        return None
+    def is_on(self) -> bool:
+        """Return whether the last poll succeeded."""
+        return self.coordinator.last_update_success
 
 
-class UnifiUnasPoolBinarySensor(UnifiUnasBaseBinarySensor):
-    """Per-pool UNAS binary sensor."""
+class StorageProblemSensor(UnifiDriveEntity, BinarySensorEntity):
+    """Any pool or the cache degraded, or any drive at risk."""
 
-    entity_description: PoolBinarySensorDescription
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "storage_problem"
 
-    def __init__(
-        self,
-        coordinator: UnifiUnasCoordinator,
-        entry: UnifiDriveConfigEntry,
-        description: PoolBinarySensorDescription,
-        pool_key: str,
-        pool_name: str,
-    ) -> None:
-        """Initialize the pool binary sensor."""
-        super().__init__(coordinator, entry)
-        self.entity_description = description
-        self._pool_key = pool_key
-        self._pool_name = pool_name
-        suffix = description.name or description.key
-        self._attr_name = f"{pool_name} {suffix}"
-        self._attr_unique_id = (
-            f"{self._device_identifier}_{self._pool_key}_{description.key}"
-        )
+    def __init__(self, coordinator: UnifiDriveCoordinator) -> None:
+        """Initialize."""
+        super().__init__(coordinator, "storage_problem")
 
     @property
-    def available(self) -> bool:
-        """Return if the pool still exists."""
-        return bool(super().available) and self._pool() is not None
+    def is_on(self) -> bool:
+        """Return whether storage needs attention."""
+        return self.coordinator.data.storage_problem
+
+
+class PoolProblemSensor(PoolEntity, BinarySensorEntity):
+    """The pool is degraded or has a drive at risk."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    def __init__(self, coordinator: UnifiDriveCoordinator, pool: Pool) -> None:
+        """Initialize."""
+        super().__init__(coordinator, pool, "pool_problem", "Problem")
 
     @property
     def is_on(self) -> bool | None:
-        """Return the current binary state."""
-        pool = self._pool()
-        if pool is None:
-            return None
-        return self.entity_description.value_fn(pool)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return pool binary diagnostics."""
-        pool = self._pool()
-        if pool is None:
-            return None
-
-        return {
-            "pool_key": self._pool_key,
-            "pool_name": self._pool_name,
-            "raw_status": _raw_pool_status(pool),
-            "rebuild_progress": _pool_rebuild_progress(pool),
-            "sync_progress": _pool_sync_progress(pool),
-        }
-
-    def _pool(self) -> dict[str, Any] | None:
-        """Return the currently matching pool by key."""
-        pool, _ = _pool_from_key(self.coordinator.data, self._pool_key)
-        return pool
+        """Return whether this pool needs attention."""
+        return pool.problem if (pool := self.pool) else None

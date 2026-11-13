@@ -1,0 +1,37 @@
+{
+  "networkInterfaces": [
+    {
+      "interface": "ethernet",
+      "interfaceName": "eth0",
+      "connected": true,
+      "maxSpeed": "2.5 GbE",
+      "linkSpeed": "2.5 GbE",
+      "address": "192.0.2.10",
+      "mac": "aa:bb:cc:dd:ee:ff"
+    }
+  ],
+  "usbs": [
+    {
+      "portId": "1",
+      "connected": false
+    }
+  ],
+  "version": "4.4.30",
+  "name": "NAS",
+  "fabricName": "",
+  "fabricId": "",
+  "model": "UNAS4W",
+  "startupTime": "2026-11-10T08:00:00Z",
+  "memory": {
+    "free": 228032,
+    "total": 3964160,
+    "available": 928192
+  },
+  "cpu": {
+    "currentload": 0.606,
+    "temperature": 74.6
+  },
+  "firmwareVersion": "6.0.18",
+  "status": "STATE_RUNNING",
+  "sfpAggregation": false
+}

@@ -1,167 +1,26 @@
 {
   "entity": {
     "binary_sensor": {
-      "device_online": {
-        "default": "mdi:lan-connect"
-      },
-      "maintenance_active": {
-        "default": "mdi:wrench"
-      },
-      "pool_maintenance_active": {
-        "default": "mdi:wrench"
-      },
-      "pool_problem": {
-        "default": "mdi:alert-circle"
-      },
-      "storage_problem": {
-        "default": "mdi:alert-circle"
-      }
+      "storage_problem": { "default": "mdi:harddisk", "state": { "on": "mdi:harddisk-remove" } }
     },
     "button": {
-      "backup_task": {
-        "default": "mdi:cloud-upload"
-      },
-      "restart": {
-        "default": "mdi:restart"
-      },
-      "shutdown": {
-        "default": "mdi:power"
-      },
-      "snapshot_create": {
-        "default": "mdi:camera"
-      },
-      "wake_on_lan": {
-        "default": "mdi:lan-connect"
-      }
-    },
-    "number": {
-      "snapshot_limit": {
-        "default": "mdi:counter"
-      },
-      "snapshot_month_day": {
-        "default": "mdi:calendar-month"
-      }
+      "shutdown": { "default": "mdi:power" },
+      "wake_on_lan": { "default": "mdi:power-on" }
     },
     "select": {
-      "fan_mode": {
-        "default": "mdi:fan-auto"
-      },
-      "snapshot_schedule": {
-        "default": "mdi:calendar-clock"
-      },
-      "snapshot_weekday": {
-        "default": "mdi:calendar-week"
-      }
+      "fan_mode": { "default": "mdi:fan" }
     },
     "sensor": {
-      "at_risk_disk_count": {
-        "default": "mdi:alert"
-      },
-      "cpu_percent": {
-        "default": "mdi:cpu-64-bit"
-      },
-      "degraded_pool_count": {
-        "default": "mdi:alert"
-      },
-      "memory_percent": {
-        "default": "mdi:memory"
-      },
-      "ssd_wear": {
-        "default": "mdi:gauge"
-      },
-      "drive_power_on_hours": {
-        "default": "mdi:clock-outline"
-      },
-      "drive_life_span": {
-        "default": "mdi:heart-pulse"
-      },
-      "drive_model": {
-        "default": "mdi:harddisk"
-      },
-      "drive_capacity": {
-        "default": "mdi:harddisk"
-      },
-      "drive_bad_sectors": {
-        "default": "mdi:alert-circle-outline"
-      },
-      "drive_uncorrectable_sectors": {
-        "default": "mdi:close-octagon-outline"
-      },
-      "drive_status": {
-        "default": "mdi:check-circle"
-      },
-      "drive_version": {
-        "default": "mdi:application-cog"
-      },
-      "maintenance_pool_count": {
-        "default": "mdi:wrench"
-      },
-      "cache_status": {
-        "default": "mdi:shield-check"
-      },
-      "overall_status": {
-        "default": "mdi:shield-check"
-      },
-      "pool_at_risk_drive_count": {
-        "default": "mdi:alert"
-      },
-      "pool_count": {
-        "default": "mdi:database"
-      },
-      "pool_drive_count": {
-        "default": "mdi:harddisk"
-      },
-      "pool_raid_level": {
-        "default": "mdi:harddisk"
-      },
-      "pool_rebuild_progress": {
-        "default": "mdi:wrench"
-      },
-      "pool_status": {
-        "default": "mdi:shield-check"
-      },
-      "pool_sync_progress": {
-        "default": "mdi:sync"
-      },
-      "read_throughput": {
-        "default": "mdi:download"
-      },
-      "snapshot_inventory": {
-        "default": "mdi:camera-burst"
-      },
-      "system_ip": {
-        "default": "mdi:ethernet"
-      },
-      "system_status": {
-        "default": "mdi:check-network"
-      },
-      "system_uptime_readable": {
-        "default": "mdi:calendar-clock"
-      },
-      "unifi_os_version": {
-        "default": "mdi:console"
-      },
-      "write_throughput": {
-        "default": "mdi:upload"
-      }
-    },
-    "switch": {
-      "snapshot_enabled": {
-        "default": "mdi:camera-switch"
-      }
-    },
-    "time": {
-      "snapshot_schedule_time": {
-        "default": "mdi:clock-outline"
-      }
-    },
-    "update": {
-      "drive": {
-        "default": "mdi:application-cog"
-      },
-      "unifi_os": {
-        "default": "mdi:console"
-      }
+      "overall_status": { "default": "mdi:nas" },
+      "at_risk_disk_count": { "default": "mdi:harddisk-remove" },
+      "cache_status": { "default": "mdi:flash" },
+      "ssd_wear": { "default": "mdi:chart-donut" },
+      "usage_percent": { "default": "mdi:harddisk" },
+      "cpu_percent": { "default": "mdi:cpu-64-bit" },
+      "memory_percent": { "default": "mdi:memory" },
+      "uptime": { "default": "mdi:timer-outline" },
+      "read_throughput": { "default": "mdi:download" },
+      "write_throughput": { "default": "mdi:upload" }
     }
   }
 }

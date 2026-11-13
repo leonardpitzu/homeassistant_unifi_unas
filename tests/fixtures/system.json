@@ -1,0 +1,8 @@
+{
+  "hardware": {
+    "shortname": "UNAS4W"
+  },
+  "name": "NAS",
+  "mac": "AABBCCDDEEFF",
+  "deviceState": "setup"
+}

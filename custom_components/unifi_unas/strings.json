@@ -1,474 +1,89 @@
 {
-  "title": "UniFi Drive / UNAS",
-  "issues": {
-    "snapshot_read_permission": {
-      "title": "UniFi Drive snapshot targets cannot be read",
-      "description": "Snapshot controls are enabled for `{entry_title}`, but the configured account or API key cannot read Drive snapshot settings.\n\nUniFi response: `{error}`\n\nGrant the account Drive snapshot permissions, update the integration credentials, or disable snapshot controls."
-    },
-    "snapshot_read_unavailable": {
-      "title": "UniFi Drive snapshot targets are unavailable",
-      "description": "Snapshot controls are enabled for `{entry_title}`, but the local Drive snapshot settings endpoint is not available or returned an unsupported response.\n\nThis may be normal on this firmware or for this account. Storage monitoring is not affected.\n\nUniFi response: `{error}`\n\nUpdate UniFi Drive, check whether this system supports snapshots, or disable snapshot controls."
-    },
-    "snapshot_create_permission": {
-      "title": "UniFi Drive snapshots cannot be created",
-      "description": "Home Assistant could not create snapshots for `{target_name}` on `{entry_title}` because the configured account or API key lacks permission.\n\nUniFi response: `{error}`\n\nGrant Drive snapshot create permissions or update the integration credentials."
-    },
-    "snapshot_create_unavailable": {
-      "title": "UniFi Drive snapshot creation is unavailable",
-      "description": "Home Assistant could not create snapshots for `{target_name}` on `{entry_title}` because the local Drive endpoint for `{target_type}` targets is unavailable or unsupported.\n\nThis may be normal on this firmware or for this account. Storage monitoring is not affected.\n\nUniFi response: `{error}`\n\nUpdate UniFi Drive, check whether this target type supports manual snapshot creation, or avoid automations that call snapshot creation for this target."
-    },
-    "snapshot_settings_permission": {
-      "title": "UniFi Drive snapshot settings cannot be changed",
-      "description": "Home Assistant could not change snapshot settings for `{target_name}` on `{entry_title}` because the configured account or API key lacks permission.\n\nUniFi response: `{error}`\n\nGrant Drive snapshot settings permissions or update the integration credentials."
-    },
-    "snapshot_settings_unavailable": {
-      "title": "UniFi Drive snapshot settings are unavailable",
-      "description": "Home Assistant could not change snapshot settings for `{target_name}` on `{entry_title}` because the local Drive endpoint for `{target_type}` targets is unavailable or unsupported.\n\nThis may be normal on this firmware or for this account. Storage monitoring is not affected.\n\nUniFi response: `{error}`\n\nUpdate UniFi Drive, check whether this target type supports snapshot settings writes, or avoid automations that change snapshot settings for this target."
-    },
-    "snapshot_target_missing": {
-      "title": "UniFi Drive snapshot target is missing",
-      "description": "Home Assistant still has snapshot controls for `{target_name}` on `{entry_title}`, but UniFi Drive has not exposed this `{target_type}` target for {missing_count} consecutive refreshes.\n\nThe entities are kept unavailable instead of being deleted automatically. This may be normal on this firmware or for this account. Storage monitoring is not affected.\n\nCheck the Drive snapshot targets and account permissions. If the target returns, this repair will clear automatically."
-    }
-  },
-  "exceptions": {
-    "snapshot_limit_whole_number": {
-      "message": "Snapshot limit must be a whole number."
-    },
-    "snapshot_limit_range": {
-      "message": "Snapshot limit must be between {min} and {max}."
-    },
-    "snapshot_schedule_option": {
-      "message": "Snapshot schedule must be one of: {options}."
-    },
-    "snapshot_schedule_time": {
-      "message": "Invalid snapshot schedule time: {error}."
-    },
-    "snapshot_weekday": {
-      "message": "Snapshot weekday must be Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or a value from 0 to 6."
-    },
-    "snapshot_monthday_whole_number": {
-      "message": "Snapshot month day must be a whole number."
-    },
-    "snapshot_monthday_range": {
-      "message": "Snapshot month day must be between 1 and 31."
-    },
-    "wake_on_lan_disabled": {
-      "message": "Wake-on-LAN is disabled for this UniFi Drive entry."
-    },
-    "wake_on_lan_mac_missing": {
-      "message": "Wake-on-LAN MAC address is missing for this UniFi Drive entry."
-    },
-    "wake_on_lan_send_failed": {
-      "message": "Could not send Wake-on-LAN packet to UniFi Drive: {error}."
-    },
-    "config_entry_not_found": {
-      "message": "Config entry {entry_id} was not found for UniFi Drive."
-    },
-    "config_entry_not_loaded": {
-      "message": "Config entry {entry_id} for UniFi Drive is not loaded."
-    },
-    "no_loaded_entries": {
-      "message": "No loaded UniFi Drive config entries are available."
-    },
-    "multiple_loaded_entries": {
-      "message": "Multiple UniFi Drive entries are loaded. Pass entry_id to target one."
-    },
-    "device_offline": {
-      "message": "Cannot {action} while UniFi Drive is offline."
-    },
-    "system_action_permission": {
-      "message": "The configured UniFi account or API key cannot perform this system action."
-    },
-    "system_action_failed": {
-      "message": "Could not {action} UniFi Drive: {error}."
-    },
-    "fan_mode_permission": {
-      "message": "The configured UniFi account or API key cannot change the native UniFi Drive fan mode."
-    },
-    "fan_mode_unsupported": {
-      "message": "Could not change native UniFi Drive fan mode with the currently known local Drive endpoints: {error}."
-    },
-    "fan_mode_failed": {
-      "message": "Could not change native UniFi Drive fan mode: {error}."
-    },
-    "snapshot_targets_permission": {
-      "message": "The configured UniFi account or API key cannot read snapshot targets."
-    },
-    "snapshot_targets_read_failed": {
-      "message": "Could not read UniFi Drive snapshot targets: {error}."
-    },
-    "snapshot_targets_empty": {
-      "message": "No snapshot targets are available for this UniFi Drive entry."
-    },
-    "snapshot_targets_ambiguous": {
-      "message": "Multiple snapshot targets are available. Pass target_key, target_id, target_name, or target_type to select one."
-    },
-    "snapshot_target_no_match": {
-      "message": "No snapshot target matches the provided target fields."
-    },
-    "snapshot_target_multiple_matches": {
-      "message": "Multiple snapshot targets match the provided target fields. Add target_key or target_id to select one."
-    },
-    "snapshot_target_type": {
-      "message": "Snapshot target_type must be shared or mydrive."
-    },
-    "snapshot_action_permission": {
-      "message": "The configured UniFi account or API key cannot {permission_action}."
-    },
-    "snapshot_action_unsupported": {
-      "message": "Could not {action} for snapshot target {target_name} with the currently known local Drive endpoints: {error}."
-    },
-    "snapshot_action_failed": {
-      "message": "Could not {action} for snapshot target {target_name}: {error}."
-    },
-    "backup_task_offline": {
-      "message": "Cannot trigger backup task while UniFi Drive is offline."
-    },
-    "backup_task_permission": {
-      "message": "The configured UniFi account or API key cannot trigger this backup task."
-    },
-    "backup_task_failed": {
-      "message": "Could not trigger backup task: {error}."
-    },
-    "snapshot_not_enabled": {
-      "message": "Snapshot protection is not enabled for {target_name} in UniFi Drive."
-    },
-    "snapshot_target_missing": {
-      "message": "Snapshot target {target_name} is no longer exposed by UniFi Drive."
-    },
-    "snapshot_settings_unsupported": {
-      "message": "Could not change snapshot settings for {target_name} with the currently known local Drive endpoints: {error}."
-    },
-    "snapshot_settings_failed": {
-      "message": "Could not change snapshot settings for {target_name}: {error}."
-    },
-    "fan_mode_unsupported_option": {
-      "message": "Unsupported UniFi Drive fan mode {option}. Valid options: {options}."
-    },
-    "update_version_not_supported": {
-      "message": "Installing a specific {update} version is not supported."
-    },
-    "update_install_failed": {
-      "message": "Could not install update: {error}."
-    }
-  },
   "config": {
     "step": {
       "user": {
-        "title": "Set up UniFi Drive / UNAS",
-        "description": "Connect to the local UniFi Drive API. Select a discovered device or enter the host manually. Use either username/password or an API key. If both are provided, username/password is used.",
+        "description": "Use a UniFi API key, or a local account (needed for restart / shut down).",
         "data": {
           "host": "Host",
           "port": "Port",
           "ssl": "Use HTTPS",
-          "verify_ssl": "Verify SSL certificate",
-          "username": "Username",
-          "password": "Password",
+          "verify_ssl": "Verify certificate",
           "api_key": "API key",
-          "scan_interval": "Polling interval in seconds",
-          "fan_control_enabled": "Enable fan-control select",
-          "snapshot_buttons_enabled": "Enable snapshot controls",
-          "discovery_debug": "Enable discovery debug logging",
-          "wol_enabled": "Enable Wake-on-LAN button",
-          "wol_broadcast_address": "Wake-on-LAN broadcast address",
-          "wol_port": "Wake-on-LAN UDP port",
-          "wol_mac_address": "Wake-on-LAN MAC address"
-        },
-        "data_description": {
-          "host": "IP address, DNS name, host:port, or HTTPS URL of the local UniFi Drive / UNAS device.",
-          "port": "Local API port. HTTPS devices normally use 443.",
-          "ssl": "Use HTTPS for the local UniFi API connection.",
-          "verify_ssl": "Validate the device certificate. Disable this for self-signed local certificates.",
-          "username": "Local UniFi OS username used for session authentication.",
-          "password": "Password for the local UniFi OS user. Leave empty during reconfigure to keep the saved password.",
-          "api_key": "Optional UniFi API key. Used only when username or password is empty.",
-          "scan_interval": "Polling interval for local API reads. The allowed range is 30 to 3600 seconds.",
-          "fan_control_enabled": "Create the fan-mode select when the device exposes fan-control endpoints.",
-          "snapshot_buttons_enabled": "Create snapshot controls after reading Drive snapshot targets. Disabled by default because it uses optional local Drive endpoints.",
-          "discovery_debug": "Add extra debug information for discovery identity matching and expose the state in diagnostics.",
-          "wol_enabled": "Create a Wake-on-LAN start button when a MAC address is configured.",
-          "wol_broadcast_address": "IPv4 broadcast address for the target network. Use 255.255.255.255 when unsure.",
-          "wol_port": "UDP port used for the Wake-on-LAN magic packet. Most devices use 9.",
-          "wol_mac_address": "MAC address used for Wake-on-LAN and trusted discovery identity matching."
-        }
-      },
-      "zeroconf_confirm": {
-        "title": "Set up discovered UniFi Drive / UNAS",
-        "description": "Home Assistant discovered `{name}`. Confirm the local API connection and provide username/password or an API key. Optional features are selected in the next step.",
-        "data": {
-          "host": "Host",
-          "port": "Port",
-          "ssl": "Use HTTPS",
-          "verify_ssl": "Verify SSL certificate",
           "username": "Username",
-          "password": "Password",
-          "api_key": "API key"
-        },
-        "data_description": {
-          "host": "IP address, DNS name, host:port, or HTTPS URL of the local UniFi Drive / UNAS device.",
-          "port": "Local API port. HTTPS devices normally use 443.",
-          "ssl": "Use HTTPS for the local UniFi API connection.",
-          "verify_ssl": "Validate the device certificate. Disable this for self-signed local certificates.",
-          "username": "Local UniFi OS username used for session authentication.",
-          "password": "Password for the local UniFi OS user. Leave empty during reconfigure to keep the saved password.",
-          "api_key": "Optional UniFi API key. Used only when username or password is empty."
-        }
-      },
-      "discovery_select": {
-        "title": "Select UniFi Drive / UNAS",
-        "description": "Home Assistant found one or more UniFi Drive / UNAS candidates on the local network. Select a device to prefill the connection form, or enter a host manually.",
-        "data": {
-          "discovered_device": "Discovered device"
-        },
-        "data_description": {
-          "discovered_device": "Select a discovered local candidate, or choose manual entry when the right device is not listed."
-        }
-      },
-      "features": {
-        "title": "UniFi Drive optional features",
-        "description": "Choose polling and optional controls. Power buttons require console power permissions. Snapshot controls require Drive snapshot permissions. Wake-on-LAN requires the device MAC address.",
-        "data": {
-          "scan_interval": "Polling interval in seconds",
-          "fan_control_enabled": "Enable fan-control select",
-          "snapshot_buttons_enabled": "Enable snapshot controls",
-          "discovery_debug": "Enable discovery debug logging",
-          "wol_enabled": "Enable Wake-on-LAN button",
-          "wol_broadcast_address": "Wake-on-LAN broadcast address",
-          "wol_port": "Wake-on-LAN UDP port",
-          "wol_mac_address": "Wake-on-LAN MAC address"
-        },
-        "data_description": {
-          "scan_interval": "Polling interval for local API reads. The allowed range is 30 to 3600 seconds.",
-          "fan_control_enabled": "Create the fan-mode select when the device exposes fan-control endpoints.",
-          "snapshot_buttons_enabled": "Create snapshot controls after reading Drive snapshot targets. Disabled by default because it uses optional local Drive endpoints.",
-          "discovery_debug": "Add extra debug information for discovery identity matching and expose the state in diagnostics.",
-          "wol_enabled": "Create a Wake-on-LAN start button when a MAC address is configured.",
-          "wol_broadcast_address": "IPv4 broadcast address for the target network. Use 255.255.255.255 when unsure.",
-          "wol_port": "UDP port used for the Wake-on-LAN magic packet. Most devices use 9.",
-          "wol_mac_address": "MAC address used for Wake-on-LAN and trusted discovery identity matching."
-        }
-      },
-      "reauth_confirm": {
-        "title": "Re-authenticate UniFi Drive / UNAS",
-        "description": "Update credentials or API key for this UniFi Drive device. If both are provided, username/password is used.",
-        "data": {
-          "username": "Username",
-          "password": "Password",
-          "api_key": "API key"
-        },
-        "data_description": {
-          "username": "Local UniFi OS username used for session authentication.",
-          "password": "Password for the local UniFi OS user. Leave empty during reconfigure to keep the saved password.",
-          "api_key": "Optional UniFi API key. Used only when username or password is empty."
+          "password": "Password"
         }
       },
       "reconfigure": {
-        "title": "Reconfigure UniFi Drive / UNAS",
-        "description": "Choose whether to update the local API connection or optional integration features.",
-        "menu_options": {
-          "reconfigure_connection": "Connection and authentication",
-          "reconfigure_features": "Polling and optional features"
-        }
-      },
-      "reconfigure_connection": {
-        "title": "Reconfigure UniFi Drive connection",
-        "description": "Update the local API connection. Leave password empty to keep the stored password. If both auth methods are provided, username/password is used.",
         "data": {
           "host": "Host",
           "port": "Port",
           "ssl": "Use HTTPS",
-          "verify_ssl": "Verify SSL certificate",
-          "username": "Username",
-          "password": "Password",
-          "api_key": "API key"
-        },
-        "data_description": {
-          "host": "IP address, DNS name, host:port, or HTTPS URL of the local UniFi Drive / UNAS device.",
-          "port": "Local API port. HTTPS devices normally use 443.",
-          "ssl": "Use HTTPS for the local UniFi API connection.",
-          "verify_ssl": "Validate the device certificate. Disable this for self-signed local certificates.",
-          "username": "Local UniFi OS username used for session authentication.",
-          "password": "Password for the local UniFi OS user. Leave empty during reconfigure to keep the saved password.",
-          "api_key": "Optional UniFi API key. Used only when username or password is empty."
+          "verify_ssl": "Verify certificate"
         }
       },
-      "reconfigure_features": {
-        "title": "Reconfigure UniFi Drive features",
-        "description": "Update polling, fan-control, snapshot and Wake-on-LAN settings. Power buttons require console power permissions. Snapshot controls require Drive snapshot permissions.",
+      "reauth_confirm": {
+        "description": "Enter a new API key or local account.",
         "data": {
-          "scan_interval": "Polling interval in seconds",
-          "fan_control_enabled": "Enable fan-control select",
-          "snapshot_buttons_enabled": "Enable snapshot controls",
-          "discovery_debug": "Enable discovery debug logging",
-          "wol_enabled": "Enable Wake-on-LAN button",
-          "wol_broadcast_address": "Wake-on-LAN broadcast address",
-          "wol_port": "Wake-on-LAN UDP port",
-          "wol_mac_address": "Wake-on-LAN MAC address"
-        },
-        "data_description": {
-          "scan_interval": "Polling interval for local API reads. The allowed range is 30 to 3600 seconds.",
-          "fan_control_enabled": "Create the fan-mode select when the device exposes fan-control endpoints.",
-          "snapshot_buttons_enabled": "Create snapshot controls after reading Drive snapshot targets. Disabled by default because it uses optional local Drive endpoints.",
-          "discovery_debug": "Add extra debug information for discovery identity matching and expose the state in diagnostics.",
-          "wol_enabled": "Create a Wake-on-LAN start button when a MAC address is configured.",
-          "wol_broadcast_address": "IPv4 broadcast address for the target network. Use 255.255.255.255 when unsure.",
-          "wol_port": "UDP port used for the Wake-on-LAN magic packet. Most devices use 9.",
-          "wol_mac_address": "MAC address used for Wake-on-LAN and trusted discovery identity matching."
+          "api_key": "API key",
+          "username": "Username",
+          "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Could not connect to the UniFi Drive device.",
-      "invalid_auth": "Invalid credentials or API key.",
-      "credentials_or_api_key_required": "Provide username/password or an API key.",
-      "invalid_host": "Invalid host or IP address.",
-      "unsupported_response": "The UniFi Drive device returned an unexpected storage response.",
-      "invalid_scan_interval": "Polling interval must be between 30 and 3600 seconds.",
-      "unknown": "Unexpected error.",
-      "mac_required": "A MAC address is required when Wake-on-LAN is enabled.",
-      "invalid_mac_address": "Invalid Wake-on-LAN MAC address.",
-      "invalid_broadcast_address": "Invalid Wake-on-LAN broadcast address. Use the subnet broadcast address or 255.255.255.255.",
-      "wrong_device": "The supplied settings point to a different UniFi Drive entry.",
-      "offline_without_wol": "The UniFi Drive device is currently offline. Enable Wake-on-LAN with a MAC address, or wait until the device is online before saving feature changes.",
-      "invalid_discovery_selection": "The selected discovered device is no longer available. Try again or enter the host manually."
+      "cannot_connect": "Cannot connect to the device.",
+      "invalid_auth": "Invalid credentials or missing permission."
     },
     "abort": {
-      "already_in_progress": "This UniFi Drive device is already being configured.",
-      "already_configured": "This UniFi Drive device is already configured.",
-      "reauth_successful": "Re-authentication was successful.",
-      "reconfigure_successful": "Reconfiguration was successful.",
-      "not_unas_device": "The discovered device does not look like a UniFi Drive / UNAS device.",
-      "wrong_device": "The supplied settings point to a different UniFi Drive entry."
+      "already_configured": "This device is already configured.",
+      "reauth_successful": "Credentials updated.",
+      "reconfigure_successful": "Connection updated.",
+      "wrong_device": "That host is a different device."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "UniFi Drive optional features",
-        "description": "Update polling, fan-control, snapshot and Wake-on-LAN settings. The entry reloads after saving so changed controls and polling apply.",
         "data": {
-          "scan_interval": "Polling interval in seconds",
-          "fan_control_enabled": "Enable fan-control select",
-          "snapshot_buttons_enabled": "Enable snapshot controls",
-          "discovery_debug": "Enable discovery debug logging",
-          "wol_enabled": "Enable Wake-on-LAN button",
+          "scan_interval": "Polling interval (seconds)",
+          "wol_mac_address": "Wake-on-LAN MAC address (empty disables)",
           "wol_broadcast_address": "Wake-on-LAN broadcast address",
-          "wol_port": "Wake-on-LAN UDP port",
-          "wol_mac_address": "Wake-on-LAN MAC address"
+          "wol_port": "Wake-on-LAN port"
         }
       }
     },
     "error": {
-      "invalid_scan_interval": "Polling interval must be between 30 and 3600 seconds.",
-      "mac_required": "A MAC address is required when Wake-on-LAN is enabled.",
-      "invalid_mac_address": "Invalid Wake-on-LAN MAC address.",
-      "invalid_broadcast_address": "Invalid Wake-on-LAN broadcast address. Use the subnet broadcast address or 255.255.255.255.",
-      "offline_without_wol": "The UniFi Drive device is currently offline. Enable Wake-on-LAN with a MAC address, or wait until the device is online before saving feature changes."
+      "invalid_mac": "Not a valid MAC address."
     }
   },
   "entity": {
+    "binary_sensor": {
+      "device_online": {
+        "name": "Device connection"
+      },
+      "storage_problem": {
+        "name": "Storage problem"
+      }
+    },
+    "button": {
+      "restart": {
+        "name": "Restart"
+      },
+      "shutdown": {
+        "name": "Shut down"
+      },
+      "wake_on_lan": {
+        "name": "Start"
+      }
+    },
+    "select": {
+      "fan_mode": {
+        "name": "Fan mode"
+      }
+    },
     "sensor": {
-      "read_throughput": {
-        "name": "Read throughput"
-      },
-      "write_throughput": {
-        "name": "Write throughput"
-      },
-      "total_storage": {
-        "name": "Total storage"
-      },
-      "used_storage": {
-        "name": "Used storage"
-      },
-      "available_storage": {
-        "name": "Available storage"
-      },
-      "usage_percent": {
-        "name": "Storage usage"
-      },
-      "pool_count": {
-        "name": "Pool count"
-      },
       "overall_status": {
-        "name": "Overall status",
-        "state": {
-          "healthy": "Healthy",
-          "degraded": "Degraded"
-        }
-      },
-      "pool_status": {
-        "name": "Status",
-        "state": {
-          "healthy": "Healthy",
-          "degraded": "Degraded"
-        }
-      },
-      "pool_capacity": {
-        "name": "Capacity"
-      },
-      "pool_used": {
-        "name": "Used"
-      },
-      "pool_available": {
-        "name": "Available"
-      },
-      "pool_usage_percent": {
-        "name": "Usage"
-      },
-      "pool_raid_level": {
-        "name": "RAID level"
-      },
-      "pool_drive_count": {
-        "name": "Drive count"
-      },
-      "pool_rebuild_progress": {
-        "name": "Rebuild progress"
-      },
-      "pool_sync_progress": {
-        "name": "Sync progress"
-      },
-      "pool_at_risk_drive_count": {
-        "name": "At-risk drive count"
-      },
-      "pool_average_drive_temperature": {
-        "name": "Average drive temperature"
-      },
-      "drive_status": {
-        "name": "Status",
-        "state": {
-          "optimal": "Optimal",
-          "at_risk": "At risk"
-        }
-      },
-      "drive_temperature": {
-        "name": "Temperature"
-      },
-      "drive_power_on_hours": {
-        "name": "Power-on hours"
-      },
-      "drive_life_span": {
-        "name": "Remaining life"
-      },
-      "drive_model": {
-        "name": "Model"
-      },
-      "drive_capacity": {
-        "name": "Capacity"
-      },
-      "drive_bad_sectors": {
-        "name": "Bad sectors"
-      },
-      "drive_uncorrectable_sectors": {
-        "name": "Uncorrectable sectors"
-      },
-      "snapshot_inventory": {
-        "name": "Snapshot inventory"
-      },
-      "degraded_pool_count": {
-        "name": "Degraded pool count"
-      },
-      "maintenance_pool_count": {
-        "name": "Maintenance pool count"
+        "name": "Overall status"
       },
       "at_risk_disk_count": {
         "name": "At-risk disk count"
@@ -476,17 +91,14 @@
       "average_disk_temperature": {
         "name": "Average disk temperature"
       },
-      "system_ip": {
-        "name": "System IP"
+      "cache_status": {
+        "name": "Cache status"
       },
-      "system_uptime_readable": {
-        "name": "Uptime"
+      "ssd_wear": {
+        "name": "SSD wear"
       },
-      "unifi_os_version": {
-        "name": "UniFi OS version"
-      },
-      "drive_version": {
-        "name": "Drive version"
+      "usage_percent": {
+        "name": "Storage usage"
       },
       "cpu_temperature": {
         "name": "CPU temperature"
@@ -497,98 +109,14 @@
       "memory_percent": {
         "name": "Memory usage"
       },
-      "ssd_wear": {
-        "name": "SSD wear"
+      "uptime": {
+        "name": "Uptime"
       },
-      "cache_status": {
-        "name": "Cache status",
-        "state": {
-          "healthy": "Healthy",
-          "degraded": "Degraded"
-        }
+      "read_throughput": {
+        "name": "Read throughput"
       },
-      "system_status": {
-        "name": "System status",
-        "state": {
-          "update_available": "Update available",
-          "online": "Online",
-          "offline": "Offline",
-          "setup": "Setup"
-        }
-      }
-    },
-    "binary_sensor": {
-      "device_online": {
-        "name": "Device connection"
-      },
-      "storage_problem": {
-        "name": "Storage problem"
-      },
-      "maintenance_active": {
-        "name": "Maintenance active"
-      },
-      "pool_problem": {
-        "name": "Problem"
-      },
-      "pool_maintenance_active": {
-        "name": "Maintenance active"
-      }
-    },
-    "button": {
-      "shutdown": {
-        "name": "Shut down"
-      },
-      "reboot": {
-        "name": "Restart"
-      },
-      "restart": {
-        "name": "Restart"
-      },
-      "wake_on_lan": {
-        "name": "Start"
-      },
-      "backup_task": {
-        "name": "Run backup"
-      },
-      "snapshot_create": {
-        "name": "Create snapshot"
-      }
-    },
-    "select": {
-      "fan_mode": {
-        "name": "Fan mode"
-      },
-      "snapshot_schedule": {
-        "name": "Snapshot schedule"
-      },
-      "snapshot_weekday": {
-        "name": "Snapshot weekday"
-      }
-    },
-    "number": {
-      "snapshot_limit": {
-        "name": "Snapshot limit"
-      },
-      "snapshot_month_day": {
-        "name": "Snapshot month day"
-      }
-    },
-    "switch": {
-      "snapshot_enabled": {
-        "name": "Snapshots"
-      }
-    },
-    "time": {
-      "snapshot_schedule_time": {
-        "name": "Snapshot schedule time"
-      }
-    },
-    "update": {
-      "unifi_os": {
-        "name": "UniFi OS"
-      },
-      "drive": {
-        "name": "Drive"
+      "write_throughput": {
+        "name": "Write throughput"
       }
     }
   }

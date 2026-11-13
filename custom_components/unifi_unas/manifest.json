@@ -7,14 +7,6 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/leonardpitzu/homeassistant_unifi_unas/issues",
-  "requirements": ["unifi-discovery==1.4.0"],
-  "version": "0.8.7",
-  "zeroconf": [
-    { "type": "_smb._tcp.local.", "name": "*unas*" },
-    { "type": "_smb._tcp.local.", "name": "*unifi*drive*" },
-    { "type": "_http._tcp.local.", "name": "*unas*" },
-    { "type": "_https._tcp.local.", "name": "*unas*" },
-    { "type": "_http._tcp.local.", "name": "*unifi*drive*" },
-    { "type": "_https._tcp.local.", "name": "*unifi*drive*" }
-  ]
+  "requirements": [],
+  "version": "1.0.0"
 }

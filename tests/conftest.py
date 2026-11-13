@@ -1,58 +1,62 @@
-"""Pytest collection setup for the UniFi Drive test suite."""
+"""Shared fixtures for the UniFi Drive / UNAS tests."""
 
 from __future__ import annotations
 
-import sys
-from importlib.util import find_spec
+import json
+from collections.abc import Generator
+from pathlib import Path
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT, CONF_SSL, CONF_VERIFY_SSL
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-HA_BACKED_TEST_FILES = {
-    "test_control_entity_states.py",
-    "test_core_monitoring_entity_states.py",
-    "test_integration_entry_setup.py",
-    "test_snapshot_control_entity_states.py",
+from custom_components.unifi_unas.const import DOMAIN
+
+FIXTURES = Path(__file__).parent / "fixtures"
+MAC = "aa:bb:cc:dd:ee:ff"
+POOL = "c50257da_ade9_48f1_a080_6285f8ccd342"
+ENTRY_DATA = {
+    CONF_HOST: "192.0.2.10",
+    CONF_PORT: 443,
+    CONF_SSL: True,
+    CONF_VERIFY_SSL: False,
+    CONF_API_KEY: "test-key",
 }
 
 
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Prepare the Home Assistant pytest plugin before tests run."""
-    _skip_ha_backed_tests_without_plugin(items)
-    _prime_homeassistant_plugin_modules()
+def load(name: str) -> dict[str, Any]:
+    """Load a JSON fixture (sanitized real UNAS 4 responses)."""
+    result: dict[str, Any] = json.loads((FIXTURES / f"{name}.json").read_text())
+    return result
 
 
-def _skip_ha_backed_tests_without_plugin(items: list[pytest.Item]) -> None:
-    """Skip HA-backed tests when the Home Assistant pytest plugin is unavailable."""
-    if find_spec("pytest_homeassistant_custom_component") is not None:
-        return
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
+    """Let Home Assistant load custom_components/unifi_unas."""
 
-    skip = pytest.mark.skip(
-        reason="HA-backed tests require pytest-homeassistant-custom-component"
+
+@pytest.fixture
+def client() -> Generator[AsyncMock]:
+    """Patch the API client used by the integration and the config flow."""
+    with (
+        patch("custom_components.unifi_unas.UnifiDriveClient", autospec=True) as setup_cls,
+        patch("custom_components.unifi_unas.config_flow.UnifiDriveClient", new=setup_cls),
+    ):
+        mock = setup_cls.return_value
+        mock.url = "https://192.0.2.10"
+        mock.async_get_system.return_value = load("system")
+        mock.async_get_storage.return_value = load("storage")
+        mock.async_get_device_info.return_value = load("device_info")
+        mock.async_get_network_io.return_value = load("network_io")
+        mock.async_get_fan_control.return_value = load("fan_control")
+        yield mock
+
+
+@pytest.fixture
+def entry() -> MockConfigEntry:
+    """Return a v2 config entry."""
+    return MockConfigEntry(
+        domain=DOMAIN, title="UniFi Drive (192.0.2.10)", unique_id=MAC, data=ENTRY_DATA, version=2
     )
-    for item in items:
-        if item.path.name in HA_BACKED_TEST_FILES:
-            item.add_marker(skip)
-
-
-def _prime_homeassistant_plugin_modules() -> None:
-    """Import HA modules that pytest-homeassistant patches by dotted path."""
-    try:
-        import homeassistant.helpers.aiohttp_client
-        import homeassistant.util.logging
-    except ModuleNotFoundError:
-        return
-
-    _bind_parent_modules("homeassistant.helpers.aiohttp_client")
-    _bind_parent_modules("homeassistant.util.logging")
-
-
-def _bind_parent_modules(module_name: str) -> None:
-    """Expose imported submodules as attributes on their parent packages."""
-    parts = module_name.split(".")
-    for index in range(1, len(parts)):
-        parent_name = ".".join(parts[:index])
-        child_name = ".".join(parts[: index + 1])
-        parent = sys.modules.get(parent_name)
-        child = sys.modules.get(child_name)
-        if parent is not None and child is not None:
-            setattr(parent, parts[index], child)
