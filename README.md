@@ -20,7 +20,7 @@ Version 1.0 is a rewrite focused on being cheap to run and easy to read.
 | HTTP requests per poll | 3 (+3 every 10 min) | 4, in parallel |
 | Default poll interval | 30 s | 60 s |
 | Entities (UNAS 4, 4 HDD + 2 SSD cache, Wake-on-LAN) | 92 | 63 |
-| Recorder rows per day (UNAS 4) | ~85,000 (measured) | ~5,000 (estimated) |
+| Recorder rows per day (UNAS 4, measured) | ~85,000 | ~7,000 |
 | Long-term statistics series | 54 | 14 |
 
 What changed:
