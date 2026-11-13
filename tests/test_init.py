@@ -78,7 +78,7 @@ async def test_setup_creates_entities(hass: HomeAssistant, client: AsyncMock, en
     fan = hass.states.get(registry.async_get_entity_id("select", DOMAIN, f"{MAC}_fan_mode"))
     assert fan.state == "Balance"
 
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, MAC)})
+    device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, MAC), entry.entry_id)
     assert (device.model, device.sw_version) == ("UNAS4W", "6.0.18 / Drive 4.4.30")
 
     assert await hass.config_entries.async_unload(entry.entry_id)
@@ -99,7 +99,7 @@ async def test_new_drive_appears(
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert _state(hass, f"{POOL}_new1_drive_status") == "optimal"
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, MAC)})
+    device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, MAC), entry.entry_id)
     assert device.sw_version == "6.1.0 / Drive 4.4.30"
 
 
